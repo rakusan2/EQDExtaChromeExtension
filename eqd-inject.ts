@@ -1,4 +1,5 @@
 let sorted:Element[],
+    postContent:HTMLCollection,
     current = 0,
     currentLabels:string[],
     adjustBy=50;
@@ -32,12 +33,69 @@ function scrollP(key:string):boolean{
     document.body.scrollTop-=current>0?adjustBy:0;
     return true
 }
+
+interface saucyPost{
+    element:Element,
+    img:HTMLImageElement,
+    text:string
+}
+let saucyPosts:saucyPost[] =[]
+function showSaucy(this: HTMLInputElement, ev: Event){
+    console.log('Saucy Event')
+    if(this.checked){
+        if(saucyPosts.length>0){
+            console.log("injecting known Saucy")
+            saucyPosts.forEach(el=>{
+                el.element.innerHTML="";
+                el.element.appendChild(el.img)
+            })
+        }else{
+            console.log("injecting unknown Saucy")
+            for(let i=0;i<postContent.length;i++){
+                if(postContent[i].nodeName == "DIV" && postContent[i].firstElementChild.children.length==0){
+                    let imgElement = document.createElement('img'),
+                        anchorElement = <HTMLAnchorElement>postContent[i].firstElementChild;
+                    imgElement.src = anchorElement.href
+                    saucyPosts.push({
+                        element:anchorElement,
+                        img:imgElement,
+                        text:anchorElement.textContent
+                    })
+                    anchorElement.innerHTML = "";
+                    anchorElement.appendChild(imgElement);
+                }
+            }
+        }
+    }
+    else{
+        console.log("removing Saucy")
+        saucyPosts.forEach(el=>{
+            el.element.innerHTML = el.text
+        })
+    }
+}
+
 /** Map of Array Preparation Functions */
 const preparations = {
     Drawfriend:organizeDF
 }
 function prepare(type:"Drawfriend"){
+    let saucyCheck = document.createElement('label'),
+        saucyCheckBox = document.createElement('input');
+    saucyCheckBox.id = 'setting-show-saucy';
+    saucyCheckBox.type='checkbox';
+    //if(type ==="Drawfriend"){
+    //    console.log("Add Show Saucy")
+    //    saucyCheckBox.addEventListener('change',showSaucy,false)
+    //}
+    saucyCheck.appendChild(saucyCheckBox);
+    saucyCheck.innerHTML+=" Show Saucy";
+    document.getElementsByClassName("settings-content")[0].appendChild(saucyCheck);
+    document.getElementById('setting-show-saucy').onchange = showSaucy
+
     if(sorted)return;
+
+    postContent = document.getElementsByClassName("post-body")[0].children
     sorted = preparations[type]()
     console.log("sorted")
     console.log(sorted)
@@ -56,14 +114,13 @@ function prepare(type:"Drawfriend"){
 }
 /** Organize DrawFriend posts into a array of Elements */
 function organizeDF(){
-    let body = document.getElementsByClassName("post-body")[0].children
-    let element:HTMLHRElement, elements = [document.body,document.getElementsByClassName("blog-post")[0],body[0]];
-    let last=0,closestD=Math.abs(body[0].getBoundingClientRect().top),closest=0
-    for(let i =1;i<body.length;i++){
-        element=body[i]as HTMLHRElement
+    let element:HTMLHRElement, elements = [document.body,document.getElementsByClassName("blog-post")[0],postContent[0]];
+    let last=0,closestD=Math.abs(postContent[0].getBoundingClientRect().top),closest=0
+    for(let i =1;i<postContent.length;i++){
+        element=postContent[i]as HTMLHRElement
         if(element.nodeName=="HR"){
             let eTop  = Math.abs(element.getBoundingClientRect().top)
-            console.log({eTop,current:elements.length})
+            //console.log({eTop,current:elements.length})
             if(element.scrollTop>=0 && eTop<closestD){
                 closest=elements.length-(i-last<=2?1:0);
                 closestD=eTop;

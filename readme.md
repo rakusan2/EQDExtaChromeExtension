@@ -3,6 +3,7 @@ This is a chrome extension made to give EQD some extra features like image brows
 
 ### Currently has:
 * Scrolling using arrows on DrawFriend
+
 ***
 
 I am not in any way associated with EQD

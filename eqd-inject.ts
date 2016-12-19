@@ -1,6 +1,7 @@
 let sorted:Element[],
     current = 0,
-    currentLabels:string[];
+    currentLabels:string[],
+    adjustBy=50;
 
 chrome.runtime.onMessage.addListener((message,sender, sendResponse)=>{
     currentLabels = getLabels();
@@ -19,14 +20,17 @@ function getLabels():string[]{
     return labels
 }
 /** Page Scroll function based on Keyboard keys */
-function scrollP(key:string){
+function scrollP(key:string):boolean{
+    if(sorted ===undefined)return false;
     if(key == "ArrowDown"){
         current=Math.min(sorted.length-1,current+1)
     }else if(key == "ArrowUp"){
         current=Math.max(0,current-1)
     }
-    else return;
-    if(sorted !==undefined)sorted[current].scrollIntoView({behavior:"auto",block:"start"}as ScrollIntoViewOptions)
+    else return false;
+    sorted[current].scrollIntoView({behavior:"auto",block:"start"}as ScrollIntoViewOptions)
+    document.body.scrollTop-=current>0?adjustBy:0;
+    return true
 }
 /** Map of Array Preparation Functions */
 const preparations = {
@@ -38,28 +42,42 @@ function prepare(type:"Drawfriend"){
     console.log("sorted")
     console.log(sorted)
     document.body.onkeydown = keyEv =>{
-        keyEv.preventDefault()
-        keyEv.stopPropagation()
-        scrollP(keyEv.key);
+        if(scrollP(keyEv.key)){
+            keyEv.preventDefault()
+            keyEv.stopPropagation()
+        }
     }
+    let navbar = <HTMLInputElement>document.getElementById("setting-fixed-navigation-bar")
+    navbar.onchange=(ev)=>{
+        adjustBy=navbar.checked?50:0
+        console.log({navBarFixed:navbar.checked})
+    }
+    adjustBy=navbar.checked?50:0
 }
 /** Organize DrawFriend posts into a array of Elements */
 function organizeDF(){
     let body = document.getElementsByClassName("post-body")[0].children
-    let element:Element, elements = [body[0]];
-    let last=0,closestD=500,closest=0
+    let element:HTMLHRElement, elements = [document.body,document.getElementsByClassName("blog-post")[0],body[0]];
+    let last=0,closestD=Math.abs(body[0].getBoundingClientRect().top),closest=0
     for(let i =1;i<body.length;i++){
-        element=body[i]
-        if(i-last>2 && element.nodeName=="HR"){
-            if(element.scrollTop>=0 && closestD-element.scrollTop>0){
-                closest=elements.length;
-                closestD=element.scrollTop;
+        element=body[i]as HTMLHRElement
+        if(element.nodeName=="HR"){
+            let eTop  = Math.abs(element.getBoundingClientRect().top)
+            console.log({eTop,current:elements.length})
+            if(element.scrollTop>=0 && eTop<closestD){
+                closest=elements.length-(i-last<=2?1:0);
+                closestD=eTop;
+            }
+            if(i-last>2){
+                elements.push(element);
+            }
+            else{
+                elements[elements.length-1]=element
             }
             last=i
-            elements.push(element);
-            console.log(i);
         }
     }
     current=closest;
+    console.log({current})
     return elements;
 }

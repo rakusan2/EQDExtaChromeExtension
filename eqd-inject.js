@@ -1,12 +1,6 @@
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     sendResponse(getLabels());
 });
-document.body.onkeydown = function (keyEv) {
-    keyEv.preventDefault();
-    keyEv.stopPropagation();
-    if (keyEv.key == "ArrowDown" || keyEv.key == "ArrowUp")
-        scrollP(keyEv.key);
-};
 var sorted;
 var current = 0;
 function getLabels() {
@@ -34,12 +28,17 @@ var preparations = {
     Drawfriend: organizeDF
 };
 function prepare(type) {
-    console.log("preparing");
     if (sorted)
         return;
     sorted = preparations[type]();
     console.log("sorted");
     console.log(sorted);
+    document.body.onkeydown = function (keyEv) {
+        keyEv.preventDefault();
+        keyEv.stopPropagation();
+        if (keyEv.key == "ArrowDown" || keyEv.key == "ArrowUp")
+            scrollP(keyEv.key);
+    };
 }
 function organizeDF() {
     var body = document.getElementsByClassName("post-body")[0].children;

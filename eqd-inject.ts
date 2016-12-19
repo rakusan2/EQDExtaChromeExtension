@@ -1,11 +1,6 @@
 chrome.runtime.onMessage.addListener((message,sender, sendResponse)=>{
     sendResponse(getLabels())
 })
-document.body.onkeydown = keyEv =>{
-    keyEv.preventDefault()
-    keyEv.stopPropagation()
-    if(keyEv.key == "ArrowDown" || keyEv.key == "ArrowUp")scrollP(keyEv.key);
-}
 let sorted:Element[];
 let current = 0;
 function getLabels():string[]{
@@ -30,11 +25,15 @@ const preparations = {
     Drawfriend:organizeDF
 }
 function prepare(type:"Drawfriend"){
-    console.log("preparing")
     if(sorted)return;
     sorted = preparations[type]()
     console.log("sorted")
     console.log(sorted)
+    document.body.onkeydown = keyEv =>{
+        keyEv.preventDefault()
+        keyEv.stopPropagation()
+        if(keyEv.key == "ArrowDown" || keyEv.key == "ArrowUp")scrollP(keyEv.key);
+    }
 }
 function organizeDF(){
     let body = document.getElementsByClassName("post-body")[0].children

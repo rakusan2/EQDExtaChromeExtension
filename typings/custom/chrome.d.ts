@@ -659,7 +659,7 @@ declare namespace chrome{
         var onCreated:onCreated
         interface changeInfo{
             /** The status of the tab. Can be either loading or complete. */
-            status?:string,
+            status?:"loading"|"complete",
             /** The tab's URL if it has changed. */
             url?:string,
             /** The tab's new pinned state. */
@@ -679,7 +679,7 @@ declare namespace chrome{
         }
         /** Fired when a tab is updated. */
         interface onUpdated extends events.Event{
-            addListener(callback:(tab:Tab,changeInfo:changeInfo)=>void):void
+            addListener(callback:(tabId:number,changeInfo:changeInfo,tab:Tab)=>void):void
         }
         var onUpdated:onUpdated
         /** Fired when a tab is moved within a window. Only one move event is fired, representing the tab the user directly moved. Move events are not fired for the other tabs that must move in response. This event is not fired when a tab is moved between windows. For that, see tabs.onDetached. */

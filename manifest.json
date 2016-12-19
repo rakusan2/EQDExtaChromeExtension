@@ -1,14 +1,14 @@
 {
     "name":"EQD Extras Features",
     "author":"Tomas R",
-    "version":"0.1.1",
+    "version":"0.2.3",
     "manifest_version":2,
     "description":"Extra features for the Equestria Daily site",
     "background":{
         "scripts":["backScript.js"]
     },
     "content_scripts":[
-        {"matches":["http://www.equestriadaily.com/**"],"js":["eqd-extra.js"]}
+        {"matches":["http://www.equestriadaily.com/**"],"js":["eqd-inject.js"]}
     ],
     "icons":{
         "16":"images/eqd16.png",

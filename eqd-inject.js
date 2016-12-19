@@ -81,7 +81,9 @@ function prepare(type) {
     saucyCheck.appendChild(saucyCheckBox);
     saucyCheck.innerHTML += " Show Saucy";
     document.getElementsByClassName("settings-content")[0].appendChild(saucyCheck);
-    document.getElementById('setting-show-saucy').onchange = showSaucy;
+    if (type === "Drawfriend") {
+        document.getElementById('setting-show-saucy').onchange = showSaucy;
+    }
     if (sorted)
         return;
     postContent = document.getElementsByClassName("post-body")[0].children;

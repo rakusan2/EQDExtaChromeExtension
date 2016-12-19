@@ -1,0 +1,30 @@
+{
+    "name":"EQD Extras Features",
+    "author":"Tomas R",
+    "version":"0.1.1",
+    "manifest_version":2,
+    "description":"Extra features for the Equestria Daily site",
+    "background":{
+        "scripts":["backScript.js"]
+    },
+    "content_scripts":[
+        {"matches":["http://www.equestriadaily.com/**"],"js":["eqd-extra.js"]}
+    ],
+    "icons":{
+        "16":"images/eqd16.png",
+        "48":"images/eqd48.png",
+        "128":"images/eqd128.png"
+    },
+    "page_action":{
+        "default_icon":{
+            "16":"images/eqd16.png",
+            "24":"images/eqd24.png",
+            "32":"images/eqd32.png"
+        },
+        "default_title":"EQD Extra",
+        "default_popup":"popup.html"
+    },
+    "permissions":[
+        "tabs"
+    ]
+}

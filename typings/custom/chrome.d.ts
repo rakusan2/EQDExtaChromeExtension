@@ -178,8 +178,26 @@ declare namespace chrome{
             ports?:number[]|number[][];
         }
     }
+    /** The chrome.extension API has utilities that can be used by any extension page. It includes support for exchanging messages between an extension and its content scripts or between extensions, as described in detail in Message Passing.  */
     export namespace extension{
-
+        /** The type of extension view. */
+        type ViewType="tab"|"popup"
+        /** Set for the lifetime of a callback if an ansychronous extension api has resulted in an error. If no error has occured lastError will be undefined. */
+        var lastError:{message:string};
+        /** True for content scripts running inside incognito tabs, and for extension pages running inside an incognito process. The latter only applies to extensions with 'split' incognito_behavior. */
+        var inIncognitoContext:boolean;
+        /** Converts a relative path within an extension install directory to a fully-qualified URL. */
+        function getURL(path:string):string
+        /** Returns an array of the JavaScript 'window' objects for each of the pages running inside the current extension. */
+        function getViews(fetchProperties?:{type?:ViewType,windowId:number,tabId:number}):void
+        /** Returns the JavaScript 'window' object for the background page running inside the current extension. Returns null if the extension has no background page. */
+        function getBackgroundPage():Window
+        /** Retrieves the state of the extension's access to Incognito-mode (as determined by the user-controlled 'Allowed in Incognito' checkbox. */
+        function isAllowedIncognitoAccess(callback:(isAllowedAccess:boolean)=>void):void
+        /** Retrieves the state of the extension's access to the 'file://' scheme (as determined by the user-controlled 'Allow access to File URLs' checkbox. */
+        function isAllowedFileSchemeAccess(callback:(isAllowedAccess:boolean)=>void):void
+        /** Sets the value of the ap CGI parameter used in the extension's update URL. This value is ignored for extensions that are hosted in the Chrome Extension Gallery. */
+        function setUpdateUrlData(data:string):void;
     }
     export namespace extensionTypes{
 
@@ -371,9 +389,9 @@ declare namespace chrome{
         var onConnectExternal:onConnectExternal
         /** Fired when a message is sent from either an extension process (by runtime.sendMessage) or a content script (by tabs.sendMessage). */
         interface onMessage extends events.Event{
-            addListener(callback:(message,sender:MessageSender,sendResponse:()=>void)=>void):void
+            addListener(callback:(message,sender:MessageSender,sendResponse:(response:Object|true)=>void)=>void):void
         }
-        var omMessage:onMessage
+        var onMessage:onMessage
         /** Fired when a message is sent from another extension/app (by runtime.sendMessage). Cannot be used in a content script. */
         var onMessageExternal :onMessage
         /**  */

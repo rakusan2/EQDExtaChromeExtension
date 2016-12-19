@@ -1,5 +1,12 @@
 function updateURL(tabID:number){
-    chrome.tabs.sendMessage(tabID,{},address=>{
+    chrome.tabs.sendMessage(tabID,{},labels=>{
+        console.log({tabID,labels})
+        if(Array.isArray(labels) && labels.length>0){
+            chrome.pageAction.show(tabID)
+        }
+        else{
+            chrome.pageAction.hide(tabID)
+        }
     })
 }
 chrome.tabs.onUpdated.addListener((tabID,change,tab)=>{

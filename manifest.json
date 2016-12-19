@@ -8,7 +8,7 @@
         "scripts":["backScript.js"]
     },
     "content_scripts":[
-        {"matches":["http://www.equestriadaily.com/**"],"js":["eqd-inject.js"]}
+        {"matches":["http://www.equestriadaily.com/*/**"],"js":["eqd-inject.js"]}
     ],
     "icons":{
         "16":"images/eqd16.png",

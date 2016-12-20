@@ -46,7 +46,6 @@ function showSaucy(this: HTMLInputElement, ev: Event){
         if(saucyPosts.length>0){
             console.log("injecting known Saucy")
             saucyPosts.forEach(el=>{
-                el.element.innerHTML="";
                 el.element.appendChild(el.img)
             })
         }else{
@@ -61,7 +60,6 @@ function showSaucy(this: HTMLInputElement, ev: Event){
                         img:imgElement,
                         text:anchorElement.textContent
                     })
-                    anchorElement.innerHTML = "";
                     anchorElement.appendChild(imgElement);
                 }
             }
@@ -70,7 +68,7 @@ function showSaucy(this: HTMLInputElement, ev: Event){
     else{
         console.log("removing Saucy")
         saucyPosts.forEach(el=>{
-            el.element.innerHTML = el.text
+            el.element.removeChild(el.img)
         })
     }
 }
@@ -84,16 +82,13 @@ function prepare(type:"Drawfriend"){
         saucyCheckBox = document.createElement('input');
     saucyCheckBox.id = 'setting-show-saucy';
     saucyCheckBox.type='checkbox';
-    //if(type ==="Drawfriend"){
-    //    console.log("Add Show Saucy")
-    //    saucyCheckBox.addEventListener('change',showSaucy,false)
-    //}
-    saucyCheck.appendChild(saucyCheckBox);
-    saucyCheck.innerHTML+=" Show Saucy";
-    document.getElementsByClassName("settings-content")[0].appendChild(saucyCheck);
     if(type ==="Drawfriend"){
-        document.getElementById('setting-show-saucy').onchange = showSaucy
+        console.log("Add Show Saucy")
+        saucyCheckBox.addEventListener('change',showSaucy,false)
     }
+    saucyCheck.appendChild(saucyCheckBox);
+    saucyCheck.appendChild(document.createTextNode(" Show Saucy"));
+    document.getElementsByClassName("settings-content")[0].appendChild(saucyCheck);
 
     if(sorted)return;
 

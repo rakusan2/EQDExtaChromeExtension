@@ -36,7 +36,7 @@ function findNearestPos() {
         cur = Math.abs(pos - distances[current]);
     } while (cur < prev);
     current -= mov;
-    console.log({ current: current, by: "find" });
+    console.log({ current: current, by: "find", pos: pos, dist: distances[current] });
 }
 /** Page Scroll function based on Keyboard keys */
 function scrollP(key) {
@@ -52,7 +52,7 @@ function scrollP(key) {
         return false;
     sorted[current].scrollIntoView({ behavior: "auto", block: "start" });
     document.body.scrollTop -= current > 0 ? adjustBy : 0;
-    console.log({ current: current, by: "arrow" });
+    console.log({ current: current, by: "arrow", pos: document.body.scrollTop, dist: distances[current] });
     return true;
 }
 var saucyPosts = [];
@@ -107,7 +107,13 @@ function prepare(type) {
     if (sorted)
         return;
     postContent = document.getElementsByClassName("post-body")[0].children;
+    var navbar = document.getElementById("setting-fixed-navigation-bar");
+    navbar.onchange = function (ev) {
+        adjustBy = navbar.checked ? 50 : 0;
+        console.log({ navBarFixed: navbar.checked });
+    };
     document.body.onscroll = findNearestPos;
+    adjustBy = navbar.checked ? 50 : 0;
     sorted = preparations[type]();
     console.log("sorted");
     console.log(sorted);
@@ -117,12 +123,7 @@ function prepare(type) {
             keyEv.stopPropagation();
         }
     };
-    var navbar = document.getElementById("setting-fixed-navigation-bar");
-    navbar.onchange = function (ev) {
-        adjustBy = navbar.checked ? 50 : 0;
-        console.log({ navBarFixed: navbar.checked });
-    };
-    adjustBy = navbar.checked ? 50 : 0;
+    findNearestPos();
 }
 /** Organize DrawFriend posts into a array of Elements */
 function organizeDF() {

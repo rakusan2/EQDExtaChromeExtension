@@ -46,7 +46,7 @@ function findNearestPos(){
         cur=Math.abs(pos-distances[current])
     }while(cur<prev)
     current-=mov;
-    console.log({current,by:"find"})
+    console.log({current,by:"find",pos,dist:distances[current]})
 }
 
 /** Page Scroll function based on Keyboard keys */
@@ -60,7 +60,7 @@ function scrollP(key:string):boolean{
     else return false;
     sorted[current].scrollIntoView({behavior:"auto",block:"start"}as ScrollIntoViewOptions)
     document.body.scrollTop-=current>0?adjustBy:0;
-    console.log({current,by:"arrow"})
+    console.log({current,by:"arrow",pos:document.body.scrollTop,dist:distances[current]})
     return true
 }
 
@@ -124,7 +124,13 @@ function prepare(type:"Drawfriend"){
     if(sorted)return;
 
     postContent = document.getElementsByClassName("post-body")[0].children
+    let navbar = <HTMLInputElement>document.getElementById("setting-fixed-navigation-bar")
+    navbar.onchange=(ev)=>{
+        adjustBy=navbar.checked?50:0
+        console.log({navBarFixed:navbar.checked})
+    }
     document.body.onscroll = findNearestPos
+    adjustBy=navbar.checked?50:0
     sorted = preparations[type]()
     console.log("sorted")
     console.log(sorted)
@@ -134,12 +140,7 @@ function prepare(type:"Drawfriend"){
             keyEv.stopPropagation()
         }
     }
-    let navbar = <HTMLInputElement>document.getElementById("setting-fixed-navigation-bar")
-    navbar.onchange=(ev)=>{
-        adjustBy=navbar.checked?50:0
-        console.log({navBarFixed:navbar.checked})
-    }
-    adjustBy=navbar.checked?50:0
+    findNearestPos();
 }
 /** Organize DrawFriend posts into a array of Elements */
 function organizeDF(){

@@ -1,4 +1,4 @@
-var sorted, postContent, current = 0, currentLabels, adjustBy = 50;
+var sorted, postContent, current = 0, currentLabels, distances = [], adjustBy = 50;
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     currentLabels = getLabels();
     sendResponse(currentLabels);
@@ -15,6 +15,29 @@ function getLabels() {
     console.log({ labels: labels });
     return labels;
 }
+function updateDist() {
+    for (var i = 3; i < distances.length; i++) {
+        distances[i] = sorted[i].offsetTop - adjustBy;
+    }
+}
+function findNearestPos() {
+    var pos = document.body.scrollTop, cur = Math.abs(pos - distances[current]), prev = 0, mov = 1;
+    if (current > 0 && Math.abs(pos - distances[current - 1]) < cur) {
+        mov = -1;
+    }
+    else if (current < distances.length - 1 && Math.abs(pos - distances[current + 1]) < cur) {
+        mov = 1;
+    }
+    else
+        return;
+    do {
+        current += mov;
+        prev = cur;
+        cur = Math.abs(pos - distances[current]);
+    } while (cur < prev);
+    current -= mov;
+    console.log({ current: current, by: "find" });
+}
 /** Page Scroll function based on Keyboard keys */
 function scrollP(key) {
     if (sorted === undefined)
@@ -29,6 +52,7 @@ function scrollP(key) {
         return false;
     sorted[current].scrollIntoView({ behavior: "auto", block: "start" });
     document.body.scrollTop -= current > 0 ? adjustBy : 0;
+    console.log({ current: current, by: "arrow" });
     return true;
 }
 var saucyPosts = [];
@@ -63,6 +87,7 @@ function showSaucy(ev) {
             el.element.removeChild(el.img);
         });
     }
+    updateDist();
 }
 /** Map of Array Preparation Functions */
 var preparations = {
@@ -82,6 +107,7 @@ function prepare(type) {
     if (sorted)
         return;
     postContent = document.getElementsByClassName("post-body")[0].children;
+    document.body.onscroll = findNearestPos;
     sorted = preparations[type]();
     console.log("sorted");
     console.log(sorted);
@@ -101,26 +127,22 @@ function prepare(type) {
 /** Organize DrawFriend posts into a array of Elements */
 function organizeDF() {
     var element, elements = [document.body, document.getElementsByClassName("blog-post")[0], postContent[0]];
-    var last = 0, closestD = Math.abs(postContent[0].getBoundingClientRect().top), closest = 0;
+    var last = 0;
+    distances = [0, elements[1].offsetTop - adjustBy, elements[2].offsetTop - adjustBy];
     for (var i = 1; i < postContent.length; i++) {
         element = postContent[i];
         if (element.nodeName == "HR") {
-            var eTop = Math.abs(element.getBoundingClientRect().top);
-            //console.log({eTop,current:elements.length})
-            if (element.scrollTop >= 0 && eTop < closestD) {
-                closest = elements.length - (i - last <= 2 ? 1 : 0);
-                closestD = eTop;
-            }
             if (i - last > 2) {
                 elements.push(element);
+                distances.push(element.offsetTop - adjustBy);
             }
             else {
                 elements[elements.length - 1] = element;
+                distances[elements.length - 1] = element.offsetTop - adjustBy;
             }
             last = i;
         }
     }
-    current = closest;
     console.log({ current: current });
     return elements;
 }

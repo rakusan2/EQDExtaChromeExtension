@@ -2,6 +2,7 @@ let sorted:Element[],
     postContent:HTMLCollection,
     current = 0,
     currentLabels:string[],
+    distances:number[] = [],
     adjustBy=50;
 
 chrome.runtime.onMessage.addListener((message,sender, sendResponse)=>{
@@ -20,6 +21,34 @@ function getLabels():string[]{
     console.log({labels});
     return labels
 }
+
+function updateDist(){
+    for(let i=3;i<distances.length;i++){
+        distances[i]=(<HTMLElement>sorted[i]).offsetTop-adjustBy
+    }
+}
+
+function findNearestPos(){
+    let pos=document.body.scrollTop,
+        cur = Math.abs(pos-distances[current]),
+        prev=0,
+        mov=1
+    if(current>0 && Math.abs(pos-distances[current-1]) < cur){
+        mov=-1
+    }
+    else if(current<distances.length-1 && Math.abs(pos-distances[current+1])<cur){
+        mov=1
+    }
+    else return
+    do{
+        current+=mov;
+        prev=cur;
+        cur=Math.abs(pos-distances[current])
+    }while(cur<prev)
+    current-=mov;
+    console.log({current,by:"find"})
+}
+
 /** Page Scroll function based on Keyboard keys */
 function scrollP(key:string):boolean{
     if(sorted ===undefined)return false;
@@ -31,6 +60,7 @@ function scrollP(key:string):boolean{
     else return false;
     sorted[current].scrollIntoView({behavior:"auto",block:"start"}as ScrollIntoViewOptions)
     document.body.scrollTop-=current>0?adjustBy:0;
+    console.log({current,by:"arrow"})
     return true
 }
 
@@ -71,6 +101,7 @@ function showSaucy(this: HTMLInputElement, ev: Event){
             el.element.removeChild(el.img)
         })
     }
+    updateDist();
 }
 
 /** Map of Array Preparation Functions */
@@ -93,6 +124,7 @@ function prepare(type:"Drawfriend"){
     if(sorted)return;
 
     postContent = document.getElementsByClassName("post-body")[0].children
+    document.body.onscroll = findNearestPos
     sorted = preparations[type]()
     console.log("sorted")
     console.log(sorted)
@@ -112,26 +144,22 @@ function prepare(type:"Drawfriend"){
 /** Organize DrawFriend posts into a array of Elements */
 function organizeDF(){
     let element:HTMLHRElement, elements = [document.body,document.getElementsByClassName("blog-post")[0],postContent[0]];
-    let last=0,closestD=Math.abs(postContent[0].getBoundingClientRect().top),closest=0
+    let last=0;
+    distances =[0,(<HTMLDivElement>elements[1]).offsetTop-adjustBy,(<HTMLDivElement>elements[2]).offsetTop-adjustBy]
     for(let i =1;i<postContent.length;i++){
         element=postContent[i]as HTMLHRElement
         if(element.nodeName=="HR"){
-            let eTop  = Math.abs(element.getBoundingClientRect().top)
-            //console.log({eTop,current:elements.length})
-            if(element.scrollTop>=0 && eTop<closestD){
-                closest=elements.length-(i-last<=2?1:0);
-                closestD=eTop;
-            }
             if(i-last>2){
                 elements.push(element);
+                distances.push(element.offsetTop-adjustBy)
             }
             else{
                 elements[elements.length-1]=element
+                distances[elements.length-1]= element.offsetTop-adjustBy
             }
             last=i
         }
     }
-    current=closest;
     console.log({current})
     return elements;
 }

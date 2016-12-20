@@ -1,9 +1,10 @@
-var sorted, postContent, current = 0, currentLabels, distances = [], adjustBy = 50;
+var sorted, postContent, current = 0, currentLabels, distances = [], adjustBy = 50, updateDistOnNextMove = false, isSaucy = false;
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     currentLabels = getLabels();
     sendResponse(currentLabels);
     if (currentLabels.indexOf("Drawfriend") >= 0)
         prepare("Drawfriend");
+    relocateSettings();
 });
 /** Gets the current Posts Labels */
 function getLabels() {
@@ -42,6 +43,8 @@ function findNearestPos() {
 function scrollP(key) {
     if (sorted === undefined)
         return false;
+    if (updateDistOnNextMove)
+        updateDist();
     if (key == "ArrowDown") {
         current = Math.min(sorted.length - 1, current + 1);
     }
@@ -56,9 +59,13 @@ function scrollP(key) {
     return true;
 }
 var saucyPosts = [];
-function showSaucy(ev) {
+function showSaucy(checked) {
+    if (isSaucy === checked)
+        return;
+    isSaucy = checked;
+    localStorage.setItem("EQD-Saucy", checked.toString());
     console.log('Saucy Event');
-    if (this.checked) {
+    if (checked) {
         if (saucyPosts.length > 0) {
             console.log("injecting known Saucy");
             saucyPosts.forEach(function (el) {
@@ -87,7 +94,7 @@ function showSaucy(ev) {
             el.element.removeChild(el.img);
         });
     }
-    updateDist();
+    updateDistOnNextMove = true;
 }
 /** Map of Array Preparation Functions */
 var preparations = {
@@ -97,9 +104,10 @@ function prepare(type) {
     var saucyCheck = document.createElement('label'), saucyCheckBox = document.createElement('input');
     saucyCheckBox.id = 'setting-show-saucy';
     saucyCheckBox.type = 'checkbox';
+    saucyCheckBox.checked = localStorage.getItem('EQD-Saucy') === "true";
     if (type === "Drawfriend") {
         console.log("Add Show Saucy");
-        saucyCheckBox.addEventListener('change', showSaucy, false);
+        saucyCheckBox.addEventListener('change', function () { showSaucy(this.checked); }, false);
     }
     saucyCheck.appendChild(saucyCheckBox);
     saucyCheck.appendChild(document.createTextNode(" Show Saucy"));
@@ -124,6 +132,7 @@ function prepare(type) {
         }
     };
     findNearestPos();
+    showSaucy(saucyCheckBox.checked);
 }
 /** Organize DrawFriend posts into a array of Elements */
 function organizeDF() {
@@ -146,4 +155,14 @@ function organizeDF() {
     }
     console.log({ current: current });
     return elements;
+}
+function relocateSettings() {
+    var settings = document.getElementById('settings');
+    settings.parentNode.removeChild(settings);
+    document.getElementById('nav-bar').appendChild(settings);
+    settings.style.top = "2px";
+    settings.style.marginBottom = "1px";
+    settings.style.fontSize = "14px";
+    settings.style.fontWeight = "normal";
+    settings.classList.add("nav-bar-inner");
 }

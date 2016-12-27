@@ -19,12 +19,16 @@ chrome.runtime.onMessage.addListener((message,sender, sendResponse)=>{
 })
 
 window.onmessage = m => {
-    if(m.origin === "https://disqus.com" && (typeof m.data) === "object" &&  "from" in m.data )
-    console.log(m)
-    commentsSource = m.source;
-    if(m.data.m === "focus"){
-        docBody.focus();
-        console.log("focusing")
+    //console.log({m,dataType:typeof m.data})
+    if(m.origin === "https://disqus.com" && (typeof m.data) === "object" &&  "from" in m.data ){
+        console.log({m,internalData:m.data.m})
+        if(commentsSource === undefined){
+            console.log("source is set")
+            commentsSource = m.source;
+        }
+        if((typeof m.data.m) === "object"){
+            if("key" in m.data.m)keyHandler(m.data.m.key)
+        }
     }
 }
 

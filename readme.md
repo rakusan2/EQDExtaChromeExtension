@@ -6,7 +6,7 @@ This is a chrome extension made to give EQD some extra features like image brows
 * Checkbox for showing Saucy Images
 * Connects the Settings to the nav-bar
 
-The features that I want can be found on the [projects page](projects/1)
+Future features can be found on the [**projects page**](https://github.com/rakusan2/EQDExtaChromeExtension/projects/1)
 
 ***
 

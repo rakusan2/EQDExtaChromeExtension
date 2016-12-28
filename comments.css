@@ -1,0 +1,9 @@
+.imgNumber {
+  color: #cb682b;
+  font-weight: bold;
+}
+
+.imgNumber:hover {
+  cursor: pointer;
+  text-decoration: underline;
+}

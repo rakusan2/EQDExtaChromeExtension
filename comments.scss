@@ -1,0 +1,10 @@
+$imgColor: #cb682b;
+
+.imgNumber{
+   color:$imgColor;
+   font-weight: bold;
+   &:hover{
+       cursor: pointer;
+       text-decoration: underline;
+   }
+}

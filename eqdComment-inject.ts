@@ -23,6 +23,7 @@ function comment(){
     document.body.onkeydown = function(this,ev:KeyboardEvent){
         if(disSendKey)return
         messageMain({key:ev.key})
+        if(ev.key == "g")getNumbers()
         if(keys.test(ev.key)){
             ev.preventDefault();
             ev.stopPropagation();
@@ -74,14 +75,14 @@ function getNumbers(){
                             }
                             let textN = document.createTextNode(num[0]),
                                 span = document.createElement('span')
-                            span.style.color="#cb682b",
-                            span.style.fontWeight="bold"
+                            span.classList.add('imgNumber')
+                            span.dataset["from"]=num[1];
+                            span.onmouseover = numHover;
+                            if(num[2])span.dataset["to"]=num[2];
                             span.appendChild(textN);
                             fragment.appendChild(span);
                             lastEnd=m.index+num.index+num[0].length
-                            console.log(num)
                         }
-                        console.log(m)
                     }
                     if(fragment){
                         fragment.appendChild(document.createTextNode(nodeText.substring(lastEnd)))
@@ -91,4 +92,8 @@ function getNumbers(){
             }
         }
     }
+}
+
+function numHover(this:HTMLSpanElement, ev:MouseEvent){
+    messageMain({popup:{from:this.dataset["from"],to:this.dataset['to'],loc:{x:ev.clientX,y:ev.clientY}}});
 }

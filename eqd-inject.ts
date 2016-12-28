@@ -29,6 +29,7 @@ window.onmessage = m => {
         }
         if((typeof m.data.m) === "object"){
             if("key" in m.data.m)keyHandler(m.data.m.key)
+            else if("popup" in m.data.m)popupImg(m.data.m.popup)
         }
     }
 }
@@ -274,4 +275,16 @@ function messageToComments(m){
     if(commentsSource){
         commentsSource.postMessage({from:"EQDExtra",m},"https://disqus.com")
     }
+}
+interface popup{
+    from:string|number,
+    to:string|number
+}
+function popupImg(imgs:popup){
+    let from:number, to:number
+    if(typeof imgs.from === "string")from = parseInt(imgs.from)
+    else from = imgs.from
+    if(typeof imgs.to === "string")to = parseInt(imgs.to)
+    else to = imgs.to
+    console.log({from,to});
 }

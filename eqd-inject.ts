@@ -9,7 +9,8 @@ let sorted:Element[],
     adjustBy=50,
     updateDistOnNextMove=false,
     isSaucy=false,
-    commenting=false;
+    commenting=false,
+    imgEndings = /\.(png|jpe?g|gif)$/;
 
 chrome.runtime.onMessage.addListener((message,sender, sendResponse)=>{
     currentLabels = getLabels();
@@ -110,9 +111,9 @@ function keyHandler(key:string):boolean{
 /** Page Image Scroll */
 function keyScroll(dir:Direction){
     if(updateDistOnNextMove)updateDist()
-    if(dir == Direction.up){
+    if(dir == Direction.up && Math.abs(distances[current] - docBody.scrollTop) < 50){
         current=Math.max(0,current-1)
-    }else{
+    }else if(dir == Direction.down && Math.abs(docBody.scrollTop - distances[current]) < 50){
         current=Math.min(sorted.length-1,current+1)
     }
     sorted[current].scrollIntoView({behavior:"auto",block:"start"}as ScrollIntoViewOptions)
@@ -140,7 +141,9 @@ function showSaucy(checked:boolean){
         }else{
             console.log("injecting unknown Saucy")
             for(let i=0;i<postContent.length;i++){
-                if(postContent[i].nodeName == "DIV" && postContent[i].firstElementChild.children.length==0){
+
+                if(postContent[i].nodeName == "DIV" && postContent[i].children.length > 0 && postContent[i].firstElementChild.children.length==0){
+                    console.log(postContent[i])
                     let imgElement = document.createElement('img'),
                         anchorElement = <HTMLAnchorElement>postContent[i].firstElementChild;
                     imgElement.src = anchorElement.href
@@ -209,11 +212,11 @@ function prepare(type:"Drawfriend"){
 }
 /** Organize DrawFriend posts into a array of Elements */
 function organizeDF(){
-    let element:HTMLHRElement, elements = [docBody,document.getElementsByClassName("blog-post")[0],postContent[0]];
+    let element:HTMLHRElement | HTMLAnchorElement, elements = [docBody,document.getElementsByClassName("blog-post")[0],postContent[0]];
     let last=0;
     distances =[0,(<HTMLDivElement>elements[1]).offsetTop-adjustBy,(<HTMLDivElement>elements[2]).offsetTop-adjustBy]
     for(let i =1;i<postContent.length;i++){
-        element=postContent[i]as HTMLHRElement
+        element=postContent[i]as HTMLHRElement | HTMLAnchorElement
         if(element.nodeName=="HR"){
             if(i-last>2){
                 elements.push(element);
@@ -224,6 +227,16 @@ function organizeDF(){
                 distances[elements.length-1]= element.offsetTop-adjustBy
             }
             last=i
+        }
+        if(element.nodeName === "A" && imgEndings.test((element as HTMLAnchorElement).href)){
+            let tempDiv = document.createElement('div')
+            tempDiv.classList.add('seperator')
+            tempDiv.style.clear="both"
+            tempDiv.style.textAlign="center"
+            tempDiv.appendChild(element)
+            postContent[i].parentElement.replaceChild(tempDiv,postContent[i])
+            console.log("replacing")
+            console.log(element)
         }
     }
     return elements;

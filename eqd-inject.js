@@ -1,4 +1,4 @@
-var sorted, postContent, commentSection, docBody, commentsSource, current = 0, currentLabels, distances = [], adjustBy = 50, updateDistOnNextMove = false, isSaucy = false, commenting = false;
+var sorted, postContent, commentSection, docBody, commentsSource, current = 0, currentLabels, distances = [], adjustBy = 50, updateDistOnNextMove = false, isSaucy = false, commenting = false, imgEndings = /\.(png|jpe?g|gif)$/;
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     currentLabels = getLabels();
     sendResponse(currentLabels);
@@ -87,10 +87,10 @@ function keyHandler(key) {
 function keyScroll(dir) {
     if (updateDistOnNextMove)
         updateDist();
-    if (dir == 0 /* up */) {
+    if (dir == 0 /* up */ && Math.abs(distances[current] - docBody.scrollTop) < 50) {
         current = Math.max(0, current - 1);
     }
-    else {
+    else if (dir == 1 /* down */ && Math.abs(docBody.scrollTop - distances[current]) < 50) {
         current = Math.min(sorted.length - 1, current + 1);
     }
     sorted[current].scrollIntoView({ behavior: "auto", block: "start" });
@@ -114,7 +114,8 @@ function showSaucy(checked) {
         else {
             console.log("injecting unknown Saucy");
             for (var i = 0; i < postContent.length; i++) {
-                if (postContent[i].nodeName == "DIV" && postContent[i].firstElementChild.children.length == 0) {
+                if (postContent[i].nodeName == "DIV" && postContent[i].children.length > 0 && postContent[i].firstElementChild.children.length == 0) {
+                    console.log(postContent[i]);
                     var imgElement = document.createElement('img'), anchorElement = postContent[i].firstElementChild;
                     imgElement.src = anchorElement.href;
                     saucyPosts.push({
@@ -192,6 +193,16 @@ function organizeDF() {
                 distances[elements.length - 1] = element.offsetTop - adjustBy;
             }
             last = i;
+        }
+        if (element.nodeName === "A" && imgEndings.test(element.href)) {
+            var tempDiv = document.createElement('div');
+            tempDiv.classList.add('seperator');
+            tempDiv.style.clear = "both";
+            tempDiv.style.textAlign = "center";
+            tempDiv.appendChild(element);
+            postContent[i].parentElement.replaceChild(tempDiv, postContent[i]);
+            console.log("replacing");
+            console.log(element);
         }
     }
     return elements;

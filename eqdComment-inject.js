@@ -1,9 +1,12 @@
-var commentArea = document.getElementById('conversation'), keys = /^ArrowDown|^ArrowUp|^'|^"/;
+var commentArea = document.getElementById('conversation');
+var keys = /^(ArrowDown|ArrowUp|'|"|g)$/, commentNumbers = /(?::|#|are|and)\s?(\d+(?:\s?-\s?\d+)?(?:\s?,\s?\d+(?:\s?-\s?\d+)?)*)|^\s?(\d+)\s?(?:\.\s|$)/g, extractNumber = /(\d+)\s?(?:-\s?(\d+))?/g;
 if (window.self !== window.top && /disqus\.com\/embed\/comments/i.test(document.URL)) {
-    window.onmessage = function (ev) {
-        if (/equestriadaily\.com/i.test(ev.origin) && (typeof ev.data) === "object") {
-            if (ev.data.m === "click")
+    window.onmessage = function (mesg) {
+        if (/equestriadaily\.com/i.test(mesg.origin) && (typeof mesg.data) === "object") {
+            if (mesg.data.m === "click")
                 comment();
+            if (mesg.data.m === "numbers")
+                getNumbers();
         }
     };
     messageMain();
@@ -43,4 +46,39 @@ function messageMain(m) {
         message.m = m;
     console.log(message);
     parent.window.postMessage(message, "http://www.equestriadaily.com");
+}
+function getNumbers() {
+    var messages = document.getElementsByClassName('post-message'), paragraphs, sentences, m, num;
+    for (var i = 0; i < messages.length; i++) {
+        paragraphs = messages[i].children;
+        for (var ii = 0; ii < paragraphs.length; ii++) {
+            sentences = paragraphs[ii].childNodes;
+            for (var node = 0; node < sentences.length; node++) {
+                if (sentences[node].nodeName === "#text") {
+                    var nodeText = sentences[node].textContent, lastEnd = 0, fragment = void 0;
+                    while ((m = commentNumbers.exec(nodeText)) !== null) {
+                        while ((num = extractNumber.exec(m[0])) !== null) {
+                            if (!fragment)
+                                fragment = document.createDocumentFragment();
+                            if (m.index + num.index > lastEnd) {
+                                fragment.appendChild(document.createTextNode(nodeText.substring(lastEnd, m.index + num.index)));
+                            }
+                            var textN = document.createTextNode(num[0]), span = document.createElement('span');
+                            span.style.color = "#cb682b",
+                                span.style.fontWeight = "bold";
+                            span.appendChild(textN);
+                            fragment.appendChild(span);
+                            lastEnd = m.index + num.index + num[0].length;
+                            console.log(num);
+                        }
+                        console.log(m);
+                    }
+                    if (fragment) {
+                        fragment.appendChild(document.createTextNode(nodeText.substring(lastEnd)));
+                        paragraphs[ii].replaceChild(fragment, sentences[node]);
+                    }
+                }
+            }
+        }
+    }
 }

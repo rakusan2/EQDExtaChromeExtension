@@ -1,9 +1,13 @@
-let commentArea = document.getElementById('conversation') as HTMLDivElement,
-    keys = /^ArrowDown|^ArrowUp|^'|^"/
+let commentArea = document.getElementById('conversation') as HTMLDivElement
+const keys = /^(ArrowDown|ArrowUp|'|"|g)$/,
+    commentNumbers = /(?::|#|are|and)\s?(\d+(?:\s?-\s?\d+)?(?:\s?,\s?\d+(?:\s?-\s?\d+)?)*)|^\s?(\d+)\s?(?:\.\s|$)/g,
+    extractNumber=/(\d+)\s?(?:-\s?(\d+))?/g
+
 if (window.self !== window.top && /disqus\.com\/embed\/comments/i.test(document.URL)){
-    window.onmessage = function(this,ev:MessageEvent){
-        if(/equestriadaily\.com/i.test(ev.origin) && (typeof ev.data) === "object"){
-            if(ev.data.m === "click")comment();
+    window.onmessage = function(this,mesg:MessageEvent){
+        if(/equestriadaily\.com/i.test(mesg.origin) && (typeof mesg.data) === "object"){
+            if(mesg.data.m === "click")comment();
+            if(mesg.data.m === "numbers")getNumbers()
         }
     }
     messageMain()
@@ -45,4 +49,46 @@ function messageMain(m?){
     if(m !== undefined)message.m=m
     console.log(message)
     parent.window.postMessage(message,"http://www.equestriadaily.com")
+}
+
+function getNumbers(){
+    let messages = document.getElementsByClassName('post-message'),
+        paragraphs:HTMLCollection,
+        sentences:NodeList,
+        m:RegExpExecArray,
+        num:RegExpExecArray
+    for(let i =0;i<messages.length;i++){
+        paragraphs = messages[i].children
+        for(let ii = 0; ii<paragraphs.length;ii++){
+            sentences = paragraphs[ii].childNodes;
+            for(let node = 0;node<sentences.length;node++){
+                if(sentences[node].nodeName === "#text"){
+                    let nodeText = sentences[node].textContent,
+                        lastEnd=0,
+                        fragment:DocumentFragment;
+                    while((m=commentNumbers.exec(nodeText)) !== null){
+                        while((num=extractNumber.exec(m[0])) !== null){
+                            if(!fragment)fragment = document.createDocumentFragment()
+                            if(m.index+num.index>lastEnd){
+                                fragment.appendChild(document.createTextNode(nodeText.substring(lastEnd,m.index+num.index)))
+                            }
+                            let textN = document.createTextNode(num[0]),
+                                span = document.createElement('span')
+                            span.style.color="#cb682b",
+                            span.style.fontWeight="bold"
+                            span.appendChild(textN);
+                            fragment.appendChild(span);
+                            lastEnd=m.index+num.index+num[0].length
+                            console.log(num)
+                        }
+                        console.log(m)
+                    }
+                    if(fragment){
+                        fragment.appendChild(document.createTextNode(nodeText.substring(lastEnd)))
+                        paragraphs[ii].replaceChild(fragment,sentences[node]);
+                    }
+                }
+            }
+        }
+    }
 }

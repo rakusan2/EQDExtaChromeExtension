@@ -100,6 +100,11 @@ function keyHandler(key:string):boolean{
         }
     }
 
+    if(key=="g"){
+        messageToComments("numbers")
+        status =true;
+    }
+
     // Comment Section Keys
     if(commentSection !== undefined && ( key == "'" || key == '"')){
         goToComment()

@@ -1,5 +1,5 @@
 var commentArea = document.getElementById('conversation');
-var keys = /^(ArrowDown|ArrowUp|'|"|g)$/, commentNumbers = /(?::|#|are|and)\s?(\d+(?:\s?-\s?\d+)?(?:\s?,\s?\d+(?:\s?-\s?\d+)?)*)|^\s?(\d+)\s?(?:\.\s|$)/g, extractNumber = /(\d+)\s?(?:-\s?(\d+))?/g;
+var keys = /^(ArrowDown|ArrowUp|'|"|g)$/, commentNumbers = /(?::|#|are|(?:\b|\D)(?:\d{1,2}|[12]\d{2})?\s?and|(?:\b|\D)(?:\d{1,2}|[12]\d{2})\s?,|&)\s?(?:\d{1,2}|[12]\d{2})\b(?:\s?-\s?(?:\d{1,2}|[12]\d{2})\b)?(?:\s?,\s?(?:\d{1,2}|[12]\d{2})\b(?:\s?-\s?(?:\d{1,2}|[12]\d{2})\b)?)*|^\s?(?:\d{1,2}|[12]\d{2})\s?(?:\.\s|$|:)/gi, extractNumber = /(\d+)(?:\s?-\s?(\d+))?/g;
 if (window.self !== window.top && /disqus\.com\/embed\/comments/i.test(document.URL)) {
     window.onmessage = function (mesg) {
         if (/equestriadaily\.com/i.test(mesg.origin) && (typeof mesg.data) === "object") {
@@ -69,6 +69,7 @@ function getNumbers() {
                             span.classList.add('imgNumber');
                             span.dataset["from"] = num[1];
                             span.onmouseover = numHover;
+                            span.onclick = numClick;
                             if (num[2])
                                 span.dataset["to"] = num[2];
                             span.appendChild(textN);
@@ -86,5 +87,8 @@ function getNumbers() {
     }
 }
 function numHover(ev) {
-    messageMain({ popup: { from: this.dataset["from"], to: this.dataset['to'], loc: { x: ev.clientX, y: ev.clientY } } });
+    messageMain({ popup: { from: this.dataset["from"], to: this.dataset['to'], loc: { x: ev.screenX, y: ev.screenY } } });
+}
+function numClick(ev) {
+    messageMain({ click: parseInt(this.dataset['from']) });
 }

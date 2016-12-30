@@ -1,7 +1,7 @@
 let commentArea = document.getElementById('conversation') as HTMLDivElement
 const keys = /^(ArrowDown|ArrowUp|'|"|g)$/,
-    commentNumbers = /(?::|#|are|and)\s?(\d+(?:\s?-\s?\d+)?(?:\s?,\s?\d+(?:\s?-\s?\d+)?)*)|^\s?(\d+)\s?(?:\.\s|$)/g,
-    extractNumber=/(\d+)\s?(?:-\s?(\d+))?/g
+    commentNumbers = /(?::|#|are|(?:\b|\D)(?:\d{1,2}|1\d{2})?\s?and|(?:\b|\D)(?:\d{1,2}|1\d{2})\s?,|&)\s?(?:\d{1,2}|1\d{2})\b(?:\s?-\s?(?:\d{1,2}|1\d{2})(?=\D))?(?:\s?,\s?(?:\d{1,2}|1\d{2})(?=\D)(?:\s?-\s?(?:\d{1,2}|1\d{2})(?=\D))?)*|^\s?(?:\d{1,2}|1\d{2})\s?(?:\.(?=\D)|$|:)/gi,
+    extractNumber=/(\d+)(?:\s?-\s?(\d+))?/g
 
 if (window.self !== window.top && /disqus\.com\/embed\/comments/i.test(document.URL)){
     window.onmessage = function(this,mesg:MessageEvent){
@@ -78,6 +78,7 @@ function getNumbers(){
                             span.classList.add('imgNumber')
                             span.dataset["from"]=num[1];
                             span.onmouseover = numHover;
+                            span.onclick = numClick;
                             if(num[2])span.dataset["to"]=num[2];
                             span.appendChild(textN);
                             fragment.appendChild(span);
@@ -95,5 +96,8 @@ function getNumbers(){
 }
 
 function numHover(this:HTMLSpanElement, ev:MouseEvent){
-    messageMain({popup:{from:this.dataset["from"],to:this.dataset['to'],loc:{x:ev.clientX,y:ev.clientY}}});
+    messageMain({popup:{from:this.dataset["from"],to:this.dataset['to'],loc:{x:ev.screenX,y:ev.screenY}}});
+}
+function numClick(this:HTMLDivElement,ev:MouseEvent){
+    messageMain({click:parseInt(this.dataset['from'])})
 }

@@ -1,4 +1,4 @@
-var sorted, postContent, commentSection, docBody, commentsSource, current = 0, currentLabels, distances = [], adjustBy = 50, updateDistOnNextMove = false, isSaucy = false, commenting = false, imgEndings = /\.(png|jpe?g|gif)$/;
+var sorted, postContent, commentSection, docBody, commentsSource, current = 0, currentLabels, distances = [], adjustBy = 50, updateDistOnNextMove = false, isSaucy = false, commenting = false, imgEndings = /\.(png|jpe?g|gif)$/, popupDiv;
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     currentLabels = getLabels();
     sendResponse(currentLabels);
@@ -19,6 +19,8 @@ window.onmessage = function (m) {
                 keyHandler(m.data.m.key);
             else if ("popup" in m.data.m)
                 popupImg(m.data.m.popup);
+            else if ('click' in m.data.m)
+                goToImg(m.data.m.click);
         }
     }
 };
@@ -93,15 +95,16 @@ function keyHandler(key) {
 function keyScroll(dir) {
     if (updateDistOnNextMove)
         updateDist();
-    if (dir == 0 /* up */ && Math.abs(distances[current] - docBody.scrollTop) < 50) {
+    var difDist = distances[current] - docBody.scrollTop;
+    if (dir == 0 /* up */ && difDist > -90) {
         current = Math.max(0, current - 1);
     }
-    else if (dir == 1 /* down */ && Math.abs(docBody.scrollTop - distances[current]) < 50) {
+    else if (dir == 1 /* down */ && difDist < 90) {
         current = Math.min(sorted.length - 1, current + 1);
     }
     sorted[current].scrollIntoView({ behavior: "auto", block: "start" });
     docBody.scrollTop -= current > 0 ? adjustBy : 0;
-    console.log({ current: current, by: "arrow", pos: docBody.scrollTop, dist: distances[current] });
+    console.log({ current: current, by: "arrow", pos: docBody.scrollTop, dist: distances[current], difDist: difDist });
 }
 var saucyPosts = [];
 function showSaucy(checked) {
@@ -148,6 +151,9 @@ var preparations = {
 };
 function prepare(type) {
     docBody = document.body;
+    popupDiv = document.createElement('div');
+    popupDiv.style.display = "none";
+    docBody.appendChild(popupDiv);
     commentSection = document.getElementsByClassName("post-comments")[0];
     var saucyCheck = document.createElement('label'), saucyCheckBox = document.createElement('input');
     saucyCheckBox.id = 'setting-show-saucy';
@@ -189,7 +195,7 @@ function organizeDF() {
     distances = [0, elements[1].offsetTop - adjustBy, elements[2].offsetTop - adjustBy];
     for (var i = 1; i < postContent.length; i++) {
         element = postContent[i];
-        if (element.nodeName == "HR") {
+        if (element.nodeName === "HR" && postContent[i + 1].nodeName == "B") {
             if (i - last > 2) {
                 elements.push(element);
                 distances.push(element.offsetTop - adjustBy);
@@ -200,7 +206,9 @@ function organizeDF() {
             }
             last = i;
         }
-        if (element.nodeName === "A" && imgEndings.test(element.href)) {
+        else if (element.nodeName === "DIV") {
+        }
+        else if (element.nodeName === "A" && imgEndings.test(element.href)) {
             var tempDiv = document.createElement('div');
             tempDiv.classList.add('seperator');
             tempDiv.style.clear = "both";
@@ -234,6 +242,9 @@ function goToComment() {
     }
     commenting = !commenting;
     console.log({ commenting: commenting });
+}
+function goToImg(img) {
+    //docBody.scrollTop= distances[img]
 }
 function messageToComments(m) {
     if (commentsSource) {

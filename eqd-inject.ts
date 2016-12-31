@@ -10,7 +10,8 @@ let sorted:Element[],
     updateDistOnNextMove=false,
     isSaucy=false,
     commenting=false,
-    imgEndings = /\.(png|jpe?g|gif)$/;
+    imgEndings = /\.(png|jpe?g|gif)$/,
+    popupDiv:HTMLDivElement;
 
 chrome.runtime.onMessage.addListener((message,sender, sendResponse)=>{
     currentLabels = getLabels();
@@ -30,6 +31,7 @@ window.onmessage = m => {
         if((typeof m.data.m) === "object"){
             if("key" in m.data.m)keyHandler(m.data.m.key)
             else if("popup" in m.data.m)popupImg(m.data.m.popup)
+            else if('click' in m.data.m)goToImg(m.data.m.click)
         }
     }
 }
@@ -117,14 +119,15 @@ function keyHandler(key:string):boolean{
 /** Page Image Scroll */
 function keyScroll(dir:Direction){
     if(updateDistOnNextMove)updateDist()
-    if(dir == Direction.up && Math.abs(distances[current] - docBody.scrollTop) < 50){
+    let difDist = distances[current] - docBody.scrollTop
+    if(dir == Direction.up && difDist > -90){
         current=Math.max(0,current-1)
-    }else if(dir == Direction.down && Math.abs(docBody.scrollTop - distances[current]) < 50){
+    }else if(dir == Direction.down && difDist < 90 ){
         current=Math.min(sorted.length-1,current+1)
     }
     sorted[current].scrollIntoView({behavior:"auto",block:"start"}as ScrollIntoViewOptions)
     docBody.scrollTop-=current>0?adjustBy:0;
-    console.log({current,by:"arrow",pos:docBody.scrollTop,dist:distances[current]})
+    console.log({current,by:"arrow",pos:docBody.scrollTop,dist:distances[current],difDist})
 }
 
 interface saucyPost{
@@ -179,6 +182,10 @@ const preparations = {
 function prepare(type:"Drawfriend"){
     docBody = <HTMLBodyElement> document.body
 
+    popupDiv = document.createElement('div');
+    popupDiv.style.display="none";
+    docBody.appendChild(popupDiv);
+
     commentSection = <HTMLDivElement> document.getElementsByClassName("post-comments")[0]
 
     let saucyCheck = document.createElement('label'),
@@ -223,7 +230,7 @@ function organizeDF(){
     distances =[0,(<HTMLDivElement>elements[1]).offsetTop-adjustBy,(<HTMLDivElement>elements[2]).offsetTop-adjustBy]
     for(let i =1;i<postContent.length;i++){
         element=postContent[i]as HTMLHRElement | HTMLAnchorElement
-        if(element.nodeName=="HR"){
+        if(element.nodeName==="HR" && postContent[i+1].nodeName == "B"){
             if(i-last>2){
                 elements.push(element);
                 distances.push(element.offsetTop-adjustBy)
@@ -234,7 +241,10 @@ function organizeDF(){
             }
             last=i
         }
-        if(element.nodeName === "A" && imgEndings.test((element as HTMLAnchorElement).href)){
+        else if(element.nodeName === "DIV"){
+            
+        }
+        else if(element.nodeName === "A" && imgEndings.test((element as HTMLAnchorElement).href)){
             let tempDiv = document.createElement('div')
             tempDiv.classList.add('seperator')
             tempDiv.style.clear="both"
@@ -269,6 +279,10 @@ function goToComment(){
     }
     commenting = !commenting 
     console.log({commenting})
+}
+
+function goToImg(img:number){
+    //docBody.scrollTop= distances[img]
 }
 
 function messageToComments(m){

@@ -1,0 +1,32 @@
+{
+  "name": "EQDExtaChromeExtension",
+  "version": "1.0.0",
+  "description": "This is a chrome extension made to give EQD some extra features like image browsing",
+  "main": "backScript.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rakusan2/EQDExtaChromeExtension.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rakusan2/EQDExtaChromeExtension/issues"
+  },
+  "homepage": "https://github.com/rakusan2/EQDExtaChromeExtension#readme",
+  "devDependencies": {
+    "@types/browserify": "^12.0.30",
+    "@types/gulp": "^3.8.32",
+    "@types/gulp-sass": "0.0.29",
+    "@types/gulp-typescript": "0.0.32",
+    "browserify": "^13.3.0",
+    "gulp": "^3.9.1",
+    "gulp-sass": "^3.0.0",
+    "gulp-typescript": "^3.1.4",
+    "gulp-zip": "^3.2.0",
+    "typescript": "^2.1.4"
+  }
+}

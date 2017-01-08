@@ -1,0 +1,5 @@
+node_modules/
+build/
+lib/*.js
+lib/*.css
+typings/index.d.ts

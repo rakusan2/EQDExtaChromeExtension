@@ -1,3 +1,4 @@
+import ElementRunner from './ElementRunner'
 let sorted: Element[],
     postContent: HTMLCollection,
     commentSection: HTMLDivElement,
@@ -11,8 +12,8 @@ let sorted: Element[],
     isSaucy = false,
     commenting = false,
     imgEndings = /\.(png|jpe?g|gif)$/,
-    titleExtract = /(?:(.+)\s)?(?:by\s(.+))|(.+)/gi,
-    visiblecharacter = /[\w!"#$%&'()*+,.\/:;<=>?@\[\]^_`{|}~-]/g,
+    titleExtract = /(?:(.+)\s)?(?:by\s(.+))|(.+)/i,
+    visibleCharacter = /[\w!"#$%&'()*+,.\/:;<=>?@\[\]^_`{|}~-]/g,
     popupDiv: HTMLDivElement,
     images:imageGroup[]=[];
 
@@ -118,22 +119,20 @@ function keyHandler(key: string): boolean {
     }
     return status;
 }
-window.scroll({ top: 5 } as ScrollToOptions)
+//window.scroll({ top: 5 } as ScrollToOptions)
+
 /** Page Image Scroll */
 function keyScroll(dir: Direction) {
     if (updateDistOnNextMove) updateDist()
     let difDist = distances[current] - docBody.scrollTop
-    if (dir == Direction.up && difDist > -90) {
+    if (dir == Direction.up && difDist >= -90) {
         current = Math.max(0, current - 1)
-    } else if (dir == Direction.down && difDist < 90) {
+    } else if (dir == Direction.down && difDist <= 90) {
         current = Math.min(sorted.length - 1, current + 1)
     }
-    window.scroll({
-        top: distances[current],
-        behavior: "smooth"
-    } as ScrollToOptions)
+    docBody.scrollTop=distances[current]
     //sorted[current].scrollIntoView({behavior:"auto",block:"start"}as ScrollIntoViewOptions)
-    docBody.scrollTop -= current > 0 ? adjustBy : 0;
+    //docBody.scrollTop -= current > 0 ? adjustBy : 0;
     console.log({ current, by: "arrow", pos: docBody.scrollTop, dist: distances[current], difDist })
 }
 
@@ -190,7 +189,7 @@ function prepare(type: "Drawfriend") {
     docBody = <HTMLBodyElement>document.body
 
     popupDiv = document.createElement('div');
-    popupDiv.style.display = "none";
+    popupDiv.classList.add('imgPopup');
     docBody.appendChild(popupDiv);
 
     commentSection = <HTMLDivElement>document.getElementsByClassName("post-comments")[0]
@@ -211,6 +210,7 @@ function prepare(type: "Drawfriend") {
     if (sorted) return;
 
     postContent = document.getElementsByClassName("post-body")[0].children
+    console.log({children:postContent.length})
     let navbar = <HTMLInputElement>document.getElementById("setting-fixed-navigation-bar")
     navbar.onchange = (ev) => {
         adjustBy = navbar.checked ? 50 : 0
@@ -220,7 +220,7 @@ function prepare(type: "Drawfriend") {
     adjustBy = navbar.checked ? 50 : 0
     sorted = preparations[type]()
     console.log("sorted")
-    console.log(sorted)
+    console.log({sorted})
     docBody.onkeydown = keyEv => {
         if (keyHandler(keyEv.key)) {
             keyEv.preventDefault()
@@ -230,75 +230,116 @@ function prepare(type: "Drawfriend") {
     findNearestPos();
     showSaucy(saucyCheckBox.checked)
     console.log(images)
+    console.log("Prepared")
 }
 
-interface imageGroup{
-    src?:string,
-    imageSrc?:string[],
-    title?:string,
+class imageGroup{
+    src?:string
+    imageSrc?:string[]
+    title?:string
     author?:string
+    constructor({src,imageSrc,title,author}:{src?:string,imageSrc?:string[],title?:string,author?:string}){
+        this.src=src;
+        this.imageSrc=imageSrc;
+        this.title=title;
+        this.author=author;
+    }
+    private imgDiv:HTMLDivElement
+    private createDiv(){
+        let div = document.createElement('div');
+        this.imageSrc.forEach(src=>{
+            let imgEl=document.createElement('img')
+            imgEl.src=src;
+            div.appendChild(imgEl)
+        })
+        this.imgDiv=div;
+        return div;
+    }
+    getDiv(){
+        if(this.imgDiv !== undefined)return this.imgDiv
+        else return this.createDiv()
+    }
 }
 
 /** Organize DrawFriend posts into a array of Elements */
 function organizeDF() {
+    console.log("organizeDF")
     let lastNumber=0;
-    let element: HTMLHRElement | HTMLAnchorElement, elements = [docBody, document.getElementsByClassName("blog-post")[0], postContent[0]];
-    let last = 0, unclaimerHR = false, lastHrHeight = 0, lastHR: HTMLHRElement;
-    distances = [0, (<HTMLDivElement>elements[1]).offsetTop - adjustBy, (<HTMLDivElement>elements[2]).offsetTop - adjustBy]
-    for (let i = 1; i < postContent.length; i++) {
-        element = postContent[i] as HTMLHRElement | HTMLAnchorElement
-        if (element.nodeName === "HR" && postContent[i + 1].nodeName == "B") {
-            lastHrHeight = element.offsetTop - adjustBy
-            lastHR = element as HTMLHRElement
-            unclaimerHR = true;
-            last = i
-        }
-        else if(element.nodeName === "B"){
-            if(element.firstChild){
-                if(element.firstChild.nodeName === "A"){
-                    lastNumber=parseInt(/d+/.exec(element.innerText)[0],10)
-                    images[lastNumber]={
-                        src:(<HTMLAnchorElement>element.firstChild).href,
-                    }
-                    //TODO Add Saucy
-                }else if(element.firstChild.nodeName === "#text"){
-                    let title = titleExtract.exec(element.innerText)
+    let tempInfo={title:"",author:"",imageSrc:[]as string[]}
+    let elements = [docBody, document.getElementsByClassName("blog-post")[0]];
+    let unclaimedHR = false, 
+        lastHrHeight = 0, 
+        lastHR: HTMLHRElement,
+        title:RegExpExecArray;
+    distances = [0, (<HTMLDivElement>elements[1]).offsetTop - adjustBy]
+    let elRunner = new ElementRunner();
+    elRunner.add('HR',el=>{
+        lastHrHeight = el.offsetTop - adjustBy
+        lastHR = el
+        unclaimedHR = true;
+        tempInfo={title:"",author:"",imageSrc:[]as string[]};
+    }).addBranch('B',b=>{
+        b.add('A',el=>{
+            let innerNumber:RegExpExecArray
+            if ((innerNumber=/\d+/.exec(el.innerText))!==null){
+                lastNumber=parseInt(innerNumber[0],10)
+                console.log({lastNumber})
+                images[lastNumber]=new imageGroup({
+                    src:el.href,
+                    imageSrc:tempInfo.imageSrc,
+                    title:tempInfo.title,
+                    author:tempInfo.author
+                })
+            }
+            //TODO Add Saucy
+        }).add('#text',el=>{
+            if((title = titleExtract.exec(el.data))!==null){
+                console.log({title,test:el.data})
+                if(images[lastNumber]){
                     images[lastNumber].title = title[1] || title[3];
                     images[lastNumber].author = title[2];
+                }else{
+                    tempInfo.title=title[1] || title[3];
+                    tempInfo.author = title[2]
                 }
-
+                console.log({title:title[1]||title[3],author:title[2]})
             }
-        }
-        else if (element.nodeName === "DIV" && element.firstChild.nodeName == "A") {
-            let imgA = element.firstElementChild as HTMLAnchorElement
-            if (imgA.firstChild && imgA.firstChild.nodeName == "IMG") {
-                if (unclaimerHR) {
-                    sorted.push(lastHR)
+        })
+    }).addBranch('DIV',div=>{
+        div.addBranch('A',a=>{
+            a.add('IMG',el=>{
+                console.log('Add Image')
+                if (unclaimedHR) {
+                    elements.push(lastHR)
                     distances.push(lastHrHeight)
                 } else {
-                    sorted.push(imgA)
-                    distances.push((<HTMLImageElement>imgA.firstChild).offsetTop - adjustBy)
+                    elements.push(el.parentNode as HTMLAnchorElement)
+                    distances.push(el.offsetTop - adjustBy)
                 }
-                images[lastNumber].imageSrc.push((<HTMLImageElement>imgA.firstChild).src)
-                unclaimerHR = false
-            }
-        }
-        else if (element.nodeName === "A" && imgEndings.test((element as HTMLAnchorElement).href)) {
-            if (!visiblecharacter.test(element.innerText)) {
-                element.remove()
+                if(images[lastNumber]){
+                    images[lastNumber].imageSrc.push(el.src)
+                }else tempInfo.imageSrc.push(el.src)
+                unclaimedHR = false
+            })
+        })
+    }).add('A',el=>{
+        if(imgEndings.test(el.href)){
+            if (!visibleCharacter.test(el.innerText)) {
+                el.remove()
                 console.log('removing')
-                continue
+                return
             }
-            let tempDiv = document.createElement('div')
+            let tempDiv = document.createElement('div'),
+                parent = el.parentNode
             tempDiv.classList.add('seperator')
             tempDiv.style.clear = "both"
             tempDiv.style.textAlign = "center"
-            tempDiv.appendChild(element)
-            postContent[i].parentElement.replaceChild(tempDiv, postContent[i])
+            parent.replaceChild(tempDiv, el)
+            tempDiv.appendChild(el)
             console.log("replacing")
-            console.log(element)
+            console.log(el)
         }
-    }
+    }).runCollection(postContent)
     return elements;
 }
 
@@ -344,5 +385,40 @@ function popupImg(imgs: popup) {
     else from = imgs.from
     if (typeof imgs.to === "string") to = parseInt(imgs.to,10)
     else to = imgs.to
+    if(images[from]!== undefined)
     console.log({ from, to });
+    removeAllChildren(popupDiv)
+    if(to === undefined)to=from;
+    for(let i=from;i<=to;i++){
+        if(images[from] === undefined)continue
+        let div = document.createElement('div'),
+            text = document.createElement('textarea')
+
+        text.appendChild(document.createTextNode(from.toString()));
+        div.appendChild(images[i].getDiv());
+        div.appendChild(text);
+        popupDiv.appendChild(div);
+        console.log({append:from})
+        from++
+    }while(from<=to)
+    showPopup(true)
+    console.log(popupDiv)
+    console.log({show:popupDiv.classList.contains('show')})
+}
+
+function showPopup(show:boolean){
+    let shown = popupDiv.classList.contains('show');
+    if(show !== shown){
+        if(show){
+            popupDiv.classList.add('show')
+        }else{
+            popupDiv.classList.remove('show')
+        }
+    }
+}
+
+function removeAllChildren(el:Element){
+    while(popupDiv.firstChild){
+        popupDiv.removeChild(popupDiv.firstChild)
+    }
 }

@@ -1,4 +1,15 @@
 .imgPopup{
+    position: fixed;
+    bottom:20;
     border-radius: 5px;
-    position: relative
+    opacity: 0;
+    visibility: hidden;
+    transition: visibility 0s, opacity 0.5s linear;
+    &.show{
+        visibility: visible;
+        opacity: 1;
+    }
+    .img{
+        display: inline-block;
+    }
 }

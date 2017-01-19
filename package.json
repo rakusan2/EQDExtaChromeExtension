@@ -18,15 +18,20 @@
   },
   "homepage": "https://github.com/rakusan2/EQDExtaChromeExtension#readme",
   "devDependencies": {
-    "@types/browserify": "^12.0.30",
-    "@types/gulp": "^3.8.32",
-    "@types/gulp-sass": "0.0.29",
-    "@types/gulp-typescript": "0.0.32",
-    "browserify": "^13.3.0",
-    "gulp": "^3.9.1",
-    "gulp-sass": "^3.0.0",
-    "gulp-typescript": "^3.1.4",
-    "gulp-zip": "^3.2.0",
-    "typescript": "^2.1.4"
+    "@types/browserify": "~12.0",
+    "@types/gulp": "~3.8",
+    "@types/gulp-typescript": "~0.0",
+    "@types/vinyl-source-stream": "~0.0",
+    "@types/watchify": "~3.7",
+    "browserify": "~13.3",
+    "globby": "~6.1",
+    "gulp": "~3.9",
+    "gulp-crx-pack": "~1.0",
+    "gulp-sass": "~3.1",
+    "gulp-typescript": "~3.1",
+    "tsify": "~3.0",
+    "typescript": "~2.1",
+    "vinyl-source-stream": "~1.1",
+    "watchify": "~3.8"
   }
 }

@@ -3,3 +3,5 @@ build/
 lib/*.js
 lib/*.css
 typings/index.d.ts
+typings/globals/
+.log

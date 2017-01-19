@@ -8,4 +8,6 @@
             "url":"http://json.schemastore.org/chrome-manifest"
         }
     ]
+,
+"typescript.tsdk": "./node_modules/typescript/lib"
 }

@@ -1,7 +1,8 @@
-let commentArea = document.getElementById('conversation') as HTMLDivElement
+import ElementRunner from './ElementRunner';
 const keys = /^(ArrowDown|ArrowUp|'|"|g)$/,
     commentNumbers = /(?::|#|are|(?:\b|\D)(?:(?:\d{1,2}|1\d{2})\b(?:\s?-\s?(?:\d{1,2}|1\d{2})(?=\D))?)?\s?(?:and|&)|(?:\b|\D)(?:\d{1,2}|1\d{2})\b(?:\s?-\s?(?:\d{1,2}|1\d{2})(?=\D))?\s?,)\s?(?:\d{1,2}|1\d{2})\b(?:\s?-\s?(?:\d{1,2}|1\d{2})(?=\D))?(?:\s?,\s?(?:\d{1,2}|1\d{2})(?:(?=\D)|$)(?:\s?-\s?(?:\d{1,2}|1\d{2})(?:(?=\D)|$))?)*|^\s?(?:\d{1,2}|1\d{2})\b(?:\s?-\s?(?:\d{1,2}|1\d{2}))?\s?(?:\.(?=\D)|$|:)/gi,
     extractNumber=/(\d+)(?:\s?-\s?(\d+))?/g
+let hasNumbers=false;
 
 if (window.self !== window.top && /disqus\.com\/embed\/comments/i.test(document.URL)){
     window.onmessage = function(this,mesg:MessageEvent){
@@ -55,46 +56,50 @@ function messageMain(m?){
 }
 
 function getNumbers(){
+    if(hasNumbers)return;
+    hasNumbers=true
     let messages = document.getElementsByClassName('post-message'),
-        paragraphs:HTMLCollection,
-        sentences:NodeList,
         m:RegExpExecArray,
-        num:RegExpExecArray
-    for(let i =0;i<messages.length;i++){
-        paragraphs = messages[i].children
-        for(let ii = 0; ii<paragraphs.length;ii++){
-            sentences = paragraphs[ii].childNodes;
-            for(let node = 0;node<sentences.length;node++){
-                if(sentences[node].nodeName === "#text"){
-                    let nodeText = sentences[node].textContent,
-                        lastEnd=0,
-                        fragment:DocumentFragment;
-                    while((m=commentNumbers.exec(nodeText)) !== null){
-                        while((num=extractNumber.exec(m[0])) !== null){
-                            if(!fragment)fragment = document.createDocumentFragment()
-                            if(m.index+num.index>lastEnd){
-                                fragment.appendChild(document.createTextNode(nodeText.substring(lastEnd,m.index+num.index)))
-                            }
-                            let textN = document.createTextNode(num[0]),
-                                span = document.createElement('span')
-                            span.classList.add('imgNumber')
-                            span.dataset["from"]=num[1];
-                            span.onmouseover = numHover;
-                            span.onclick = numClick;
-                            if(num[2])span.dataset["to"]=num[2];
-                            span.appendChild(textN);
-                            fragment.appendChild(span);
-                            lastEnd=m.index+num.index+num[0].length
+        num:RegExpExecArray,
+        elRunner=new ElementRunner();
+    elRunner.addBranch('DIV',div=>{
+        div.addBranch('P',p=>{
+            p.add('#text',el=>{
+                let nodeText = el.data,
+                    lastEnd=0,
+                    fragment:DocumentFragment;
+                while((m=commentNumbers.exec(nodeText)) !== null){
+                    while((num=extractNumber.exec(m[0])) !== null){
+                        if(fragment === undefined)fragment = document.createDocumentFragment()
+                        if(m.index+num.index>lastEnd){
+                            fragment.appendChild(document.createTextNode(nodeText.substring(lastEnd,m.index+num.index)))
                         }
-                    }
-                    if(fragment){
-                        fragment.appendChild(document.createTextNode(nodeText.substring(lastEnd)))
-                        paragraphs[ii].replaceChild(fragment,sentences[node]);
+                        let textN = document.createTextNode(num[0]),
+                            span = document.createElement('span')
+                        span.classList.add('imgNumber')
+                        span.dataset["from"]=num[1];
+                        span.onmouseover = numHover;
+                        span.onclick = numClick;
+                        if(num[2]!== undefined){
+                            if(num[2]>num[1])span.dataset["to"]=num[2];
+                            else{
+                                span.dataset['to']=num[1];
+                                span.dataset['from']=num[2];
+                            }
+                        }
+                        span.appendChild(textN);
+                        fragment.appendChild(span);
+                        lastEnd=m.index+num.index+num[0].length
                     }
                 }
-            }
-        }
-    }
+                if(fragment !== undefined){
+                    console.log({nodeText})
+                    fragment.appendChild(document.createTextNode(nodeText.substring(lastEnd)))
+                    el.parentNode.replaceChild(fragment,el);
+                }
+            })
+        })
+    }).runCollection(messages);
 }
 
 function numHover(this:HTMLSpanElement, ev:MouseEvent){

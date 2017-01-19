@@ -79,6 +79,7 @@ function getNumbers(){
                         span.classList.add('imgNumber')
                         span.dataset["from"]=num[1];
                         span.onmouseover = numHover;
+                        span.onmouseleave = numLeave
                         span.onclick = numClick;
                         if(num[2]!== undefined){
                             if(num[2]>num[1])span.dataset["to"]=num[2];
@@ -104,6 +105,9 @@ function getNumbers(){
 
 function numHover(this:HTMLSpanElement, ev:MouseEvent){
     messageMain({popup:{from:this.dataset["from"],to:this.dataset['to'],loc:{x:ev.screenX,y:ev.screenY}}});
+}
+function numLeave(this:HTMLSpanElement,ev:MouseEvent){
+    messageMain({popup:{visible:"none"}})
 }
 function numClick(this:HTMLDivElement,ev:MouseEvent){
     messageMain({click:parseInt(this.dataset['from'])})

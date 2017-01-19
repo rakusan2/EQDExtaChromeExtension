@@ -15,7 +15,7 @@ let sorted: Element[],
     titleExtract = /(?:(.+)\s)?(?:by\s(.+))|(.+)/i,
     visibleCharacter = /[\w!"#$%&'()*+,.\/:;<=>?@\[\]^_`{|}~-]/g,
     popupDiv: HTMLDivElement,
-    images:imageGroup[]=[];
+    images:ImageGroup[]=[];
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     currentLabels = getLabels();
@@ -34,7 +34,13 @@ window.onmessage = m => {
         }
         if ((typeof m.data.m) === "object") {
             if ("key" in m.data.m) keyHandler(m.data.m.key)
-            else if ("popup" in m.data.m) popupImg(m.data.m.popup)
+            else if ("popup" in m.data.m){
+                if("visible" in m.data.m.popup){
+                    showPopup(false);
+                }else{
+                    popupImg(m.data.m.popup)
+                }
+            } 
             else if ('click' in m.data.m) goToImg(m.data.m.click)
         }
     }
@@ -233,7 +239,7 @@ function prepare(type: "Drawfriend") {
     console.log("Prepared")
 }
 
-class imageGroup{
+class ImageGroup{
     src?:string
     imageSrc?:string[]
     title?:string
@@ -284,7 +290,7 @@ function organizeDF() {
             if ((innerNumber=/\d+/.exec(el.innerText))!==null){
                 lastNumber=parseInt(innerNumber[0],10)
                 console.log({lastNumber})
-                images[lastNumber]=new imageGroup({
+                images[lastNumber]=new ImageGroup({
                     src:el.href,
                     imageSrc:tempInfo.imageSrc,
                     title:tempInfo.title,
@@ -379,36 +385,38 @@ interface popup {
     from: string | number,
     to: string | number
 }
+let lastPopup={from:0,to:0}
 function popupImg(imgs: popup) {
     let from: number, to: number
     if (typeof imgs.from === "string") from = parseInt(imgs.from,10)
     else from = imgs.from
     if (typeof imgs.to === "string") to = parseInt(imgs.to,10)
     else to = imgs.to
-    if(images[from]!== undefined)
     console.log({ from, to });
-    removeAllChildren(popupDiv)
     if(to === undefined)to=from;
+    if(lastPopup.from === from && lastPopup.to === to){
+        showPopup(true)
+        return
+    }
+    lastPopup = {from,to}
+    removeAllChildren(popupDiv)
     for(let i=from;i<=to;i++){
         if(images[from] === undefined)continue
         let div = document.createElement('div'),
             text = document.createElement('textarea')
-
-        text.appendChild(document.createTextNode(from.toString()));
+        text.appendChild(document.createTextNode(i.toString()));
         div.appendChild(images[i].getDiv());
         div.appendChild(text);
         popupDiv.appendChild(div);
-        console.log({append:from})
-        from++
-    }while(from<=to)
+        console.log({append:i})
+    }
     showPopup(true)
-    console.log(popupDiv)
-    console.log({show:popupDiv.classList.contains('show')})
 }
 
 function showPopup(show:boolean){
     let shown = popupDiv.classList.contains('show');
     if(show !== shown){
+        console.log({show,shown})
         if(show){
             popupDiv.classList.add('show')
         }else{

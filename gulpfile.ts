@@ -9,10 +9,10 @@ import * as watchify from "watchify"
 
 const sassOptions: sass.Options = {
         outputStyle:'expanded'
-    },crxOptions:crx.options = {
+    },crxOptions = ():crx.options => {return {
         privateKey:fs.readFileSync('build/ChromeEQDExt.pem','utf8'),
         filename:'eqdExtra.crx'
-    }
+    }}
 
 function combinejs(){
 
@@ -52,6 +52,6 @@ gulp.add("build",['js','css'],()=>{
 
 gulp.add('crx',['build'],()=>{
     gulp.src('build/files')
-        .pipe(crx(crxOptions))
+        .pipe(crx(crxOptions()))
         .pipe(gulp.dest('build'))
 })

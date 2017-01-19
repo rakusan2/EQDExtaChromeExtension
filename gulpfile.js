@@ -9,9 +9,11 @@ var source = require("vinyl-source-stream");
 var watchify = require("watchify");
 var sassOptions = {
     outputStyle: 'expanded'
-}, crxOptions = {
-    privateKey: fs.readFileSync('build/ChromeEQDExt.pem', 'utf8'),
-    filename: 'eqdExtra.crx'
+}, crxOptions = function () {
+    return {
+        privateKey: fs.readFileSync('build/ChromeEQDExt.pem', 'utf8'),
+        filename: 'eqdExtra.crx'
+    };
 };
 function combinejs() {
     [['lib/backScript.ts', 'backScript.js'], ['lib/eqd-inject.ts', 'eqd-inject.js'], ['lib/eqdComment-inject.ts', 'eqdComment-inject.js']].forEach(function (f) {
@@ -27,12 +29,7 @@ function combinejs() {
         bundle();
     });
 }
-gulp.add('js', function () {
-    combinejs();
-    //gulp.src('lib/*.ts')
-    //    .pipe(tsc(tsOptions))
-    //    .pipe(gulp.dest('lib'))
-});
+gulp.add('js', combinejs);
 gulp.add('css', function () {
     gulp.src('lib/*.scss')
         .pipe(sass(sassOptions))
@@ -48,6 +45,6 @@ gulp.add("build", ['js', 'css'], function () {
 });
 gulp.add('crx', ['build'], function () {
     gulp.src('build/files')
-        .pipe(crx(crxOptions))
+        .pipe(crx(crxOptions()))
         .pipe(gulp.dest('build'));
 });

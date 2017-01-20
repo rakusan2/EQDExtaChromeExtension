@@ -1,6 +1,6 @@
 import ElementRunner from './ElementRunner'
-import {ImageGroup} from './toolbox'
-import {Popup}from'./popup'
+import { ImageGroup } from './toolbox'
+import { Popup } from './popup'
 let sorted: Element[],
     postContent: HTMLCollection,
     commentSection: HTMLDivElement,
@@ -16,8 +16,8 @@ let sorted: Element[],
     imgEndings = /\.(png|jpe?g|gif)$/,
     titleExtract = /(?:(.+)\s)?(?:by\s(.+))|(.+)/i,
     visibleCharacter = /[\w!"#$%&'()*+,.\/:;<=>?@\[\]^_`{|}~-]/g,
-    images:ImageGroup[]=[],
-    popup:Popup;
+    images: ImageGroup[] = [],
+    popup: Popup;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     currentLabels = getLabels();
@@ -26,33 +26,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     relocateSettings();
 })
 
-interface mesgPopup{
-    popup:{
-        from:string|number,
-        to:string|number,
-        x:number,
-        y:number
+interface mesgPopup {
+    popup: {
+        from: string | number,
+        to: string | number,
+        x: number,
+        y: number
     }
 }
-interface mesgHidePopup{
-    popup:{
-        visible:string
+interface mesgHidePopup {
+    popup: {
+        visible: string
     }
 }
-interface mesgKeys{
-    key:string
+interface mesgKeys {
+    key: string
 }
-interface mesgClick{
-    click:number
+interface mesgClick {
+    click: number
 }
-interface mesgEvent extends MessageEvent{
+interface mesgEvent extends MessageEvent {
     data: {
-        from:string,
-        m:mesgPopup|mesgHidePopup|mesgKeys|mesgClick
+        from: string,
+        m: mesgPopup | mesgHidePopup | mesgKeys | mesgClick
     }
 }
 
-window.onmessage = (m:mesgEvent) => {
+window.onmessage = (m: mesgEvent) => {
     //console.log({m,dataType:typeof m.data})
     if (m.origin === "https://disqus.com" && (typeof m.data) === "object" && "from" in m.data) {
         console.log({ m, internalData: m.data.m })
@@ -64,13 +64,13 @@ window.onmessage = (m:mesgEvent) => {
             if ("key" in m.data.m) {
                 keyHandler((<mesgKeys>m.data.m).key)
             }
-            else if ("popup" in m.data.m){
-                if("visible" in (<mesgHidePopup|mesgPopup>m.data.m).popup){
+            else if ("popup" in m.data.m) {
+                if ("visible" in (<mesgHidePopup | mesgPopup>m.data.m).popup) {
                     popup.show(false);
-                }else{
+                } else {
                     popup.setImgs((<mesgPopup>m.data.m).popup)
                 }
-            } 
+            }
             else if ('click' in m.data.m) goToImg((<mesgClick>m.data.m).click)
         }
     }
@@ -128,17 +128,17 @@ const enum Direction {
     down
 }
 
-let keyfuncs:{[key:string]:()=>any}={
-    g:()=>messageToComments("numbers")
+let keyfuncs: { [key: string]: () => any } = {
+    g: () => messageToComments("numbers")
 }
 
 /** Page Scroll function based on Keyboard keys */
 function keyHandler(key: string): boolean {
-    console.log({key})
-    if(key in keyfuncs) {
+    console.log({ key })
+    if (key in keyfuncs) {
         keyfuncs[key]();
         return true
-    }else return false
+    } else return false
 }
 //window.scroll({ top: 5 } as ScrollToOptions)
 
@@ -151,7 +151,7 @@ function keyScroll(dir: Direction) {
     } else if (dir == Direction.down && difDist <= 90) {
         current = Math.min(sorted.length - 1, current + 1)
     }
-    docBody.scrollTop=distances[current]
+    docBody.scrollTop = distances[current]
     //sorted[current].scrollIntoView({behavior:"auto",block:"start"}as ScrollIntoViewOptions)
     //docBody.scrollTop -= current > 0 ? adjustBy : 0;
     console.log({ current, by: "arrow", pos: docBody.scrollTop, dist: distances[current], difDist })
@@ -210,8 +210,8 @@ function prepare(type: "Drawfriend") {
     docBody = <HTMLBodyElement>document.body
 
     commentSection = <HTMLDivElement>document.getElementsByClassName("post-comments")[0]
-    keyfuncs['"']=goToComment
-    keyfuncs["'"]=goToComment
+    keyfuncs['"'] = goToComment
+    keyfuncs["'"] = goToComment
 
     let saucyCheck = document.createElement('label'),
         saucyCheckBox = document.createElement('input');
@@ -229,7 +229,7 @@ function prepare(type: "Drawfriend") {
     if (sorted !== undefined) return;
 
     postContent = document.getElementsByClassName("post-body")[0].children
-    console.log({children:postContent.length})
+    console.log({ children: postContent.length })
     let navbar = <HTMLInputElement>document.getElementById("setting-fixed-navigation-bar")
     navbar.onchange = (ev) => {
         adjustBy = navbar.checked ? 50 : 0
@@ -238,13 +238,13 @@ function prepare(type: "Drawfriend") {
     docBody.onscroll = findNearestPos
     adjustBy = navbar.checked ? 50 : 0
     sorted = preparations[type]()
-    popup= new Popup(images,adjustBy)
-    keyfuncs['s']=()=>popup.show(true)
-    keyfuncs['ArrowUp']=()=> keyScroll(Direction.up)
-    keyfuncs['ArrowDown']=()=> keyScroll(Direction.down)
+    popup = new Popup(images, adjustBy)
+    keyfuncs['s'] = () => popup.show(true)
+    keyfuncs['ArrowUp'] = () => keyScroll(Direction.up)
+    keyfuncs['ArrowDown'] = () => keyScroll(Direction.down)
 
     console.log("sorted")
-    console.log({sorted})
+    console.log({ sorted })
     docBody.onkeydown = keyEv => {
         if (keyHandler(keyEv.key)) {
             keyEv.preventDefault()
@@ -262,51 +262,51 @@ function prepare(type: "Drawfriend") {
 /** Organize DrawFriend posts into a array of Elements */
 function organizeDF() {
     console.log("organizeDF")
-    let lastNumber=0;
-    let tempInfo={title:"",author:"",imageSrc:[]as string[]}
+    let lastNumber = 0;
+    let tempInfo = { title: "", author: "", imageSrc: [] as string[] }
     let elements = [docBody, document.getElementsByClassName("blog-post")[0]];
-    let unclaimedHR = false, 
-        lastHrHeight = 0, 
+    let unclaimedHR = false,
+        lastHrHeight = 0,
         lastHR: HTMLHRElement,
-        title:RegExpExecArray;
+        title: RegExpExecArray;
     distances = [0, (<HTMLDivElement>elements[1]).offsetTop - adjustBy]
     let elRunner = new ElementRunner();
-    elRunner.add('HR',el=>{
+    elRunner.add('HR', el => {
         lastHrHeight = el.offsetTop - adjustBy
         lastHR = el
         unclaimedHR = true;
-        tempInfo={title:"",author:"",imageSrc:[]as string[]};
-    }).addBranch('B',b=>{
-        b.add('A',el=>{
-            let innerNumber:RegExpExecArray
-            if ((innerNumber=/\d+/.exec(el.innerText))!==null){
-                lastNumber=parseInt(innerNumber[0],10)
-                console.log({lastNumber})
-                images[lastNumber]=new ImageGroup({
-                    src:el.href,
-                    imageSrc:tempInfo.imageSrc,
-                    title:tempInfo.title,
-                    author:tempInfo.author,
-                    num:lastNumber
+        tempInfo = { title: "", author: "", imageSrc: [] as string[] };
+    }).addBranch('B', b => {
+        b.add('A', el => {
+            let innerNumber: RegExpExecArray
+            if ((innerNumber = /\d+/.exec(el.innerText)) !== null) {
+                lastNumber = parseInt(innerNumber[0], 10)
+                console.log({ lastNumber })
+                images[lastNumber] = new ImageGroup({
+                    src: el.href,
+                    imageSrc: tempInfo.imageSrc,
+                    title: tempInfo.title,
+                    author: tempInfo.author,
+                    num: lastNumber
                 })
             }
             //TODO Add Saucy
-        }).add('#text',el=>{
-            if((title = titleExtract.exec(el.data))!==null){
-                console.log({title,test:el.data})
-                if(images[lastNumber]){
+        }).add('#text', el => {
+            if ((title = titleExtract.exec(el.data)) !== null) {
+                console.log({ title, test: el.data })
+                if (images[lastNumber]) {
                     images[lastNumber].title = title[1] || title[3];
                     images[lastNumber].author = title[2];
-                }else{
-                    tempInfo.title=title[1] || title[3];
+                } else {
+                    tempInfo.title = title[1] || title[3];
                     tempInfo.author = title[2]
                 }
-                console.log({title:title[1]||title[3],author:title[2]})
+                console.log({ title: title[1] || title[3], author: title[2] })
             }
         })
-    }).addBranch('DIV',div=>{
-        div.addBranch('A',a=>{
-            a.add('IMG',el=>{
+    }).addBranch('DIV', div => {
+        div.addBranch('A', a => {
+            a.add('IMG', el => {
                 console.log('Add Image')
                 if (unclaimedHR) {
                     elements.push(lastHR)
@@ -315,14 +315,14 @@ function organizeDF() {
                     elements.push(el.parentNode as HTMLAnchorElement)
                     distances.push(el.offsetTop - adjustBy)
                 }
-                if(images[lastNumber]){
+                if (images[lastNumber]) {
                     images[lastNumber].imageSrc.push(el.src)
-                }else tempInfo.imageSrc.push(el.src)
+                } else tempInfo.imageSrc.push(el.src)
                 unclaimedHR = false
             })
         })
-    }).add('A',el=>{
-        if(imgEndings.test(el.href)){
+    }).add('A', el => {
+        if (imgEndings.test(el.href)) {
             if (!visibleCharacter.test(el.innerText)) {
                 el.remove()
                 console.log('removing')

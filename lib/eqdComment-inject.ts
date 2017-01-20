@@ -104,7 +104,7 @@ function getNumbers(){
 }
 
 function numHover(this:HTMLSpanElement, ev:MouseEvent){
-    messageMain({popup:{from:this.dataset["from"],to:this.dataset['to'],loc:{x:ev.screenX,y:ev.screenY}}});
+    messageMain({popup:{from:this.dataset["from"],to:this.dataset['to'],x:ev.screenX,y:ev.screenY}});
 }
 function numLeave(this:HTMLSpanElement,ev:MouseEvent){
     messageMain({popup:{visible:"none"}})

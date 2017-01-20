@@ -1,4 +1,5 @@
 import ElementRunner from './ElementRunner'
+import {ImageGroup,WhenAllLoaded} from './toolbox'
 let sorted: Element[],
     postContent: HTMLCollection,
     commentSection: HTMLDivElement,
@@ -24,7 +25,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     relocateSettings();
 })
 
-window.onmessage = m => {
+interface mesgPopup{
+    popup:{
+        from:string|number,
+        to:string|number,
+        x:number,
+        y:number
+    }
+}
+interface mesgHidePopup{
+    popup:{
+        visible:string
+    }
+}
+interface mesgKeys{
+    key:string
+}
+interface mesgClick{
+    click:number
+}
+interface mesgEvent extends MessageEvent{
+    data: {
+        from:string,
+        m:mesgPopup|mesgHidePopup|mesgKeys|mesgClick
+    }
+}
+
+window.onmessage = (m:mesgEvent) => {
     //console.log({m,dataType:typeof m.data})
     if (m.origin === "https://disqus.com" && (typeof m.data) === "object" && "from" in m.data) {
         console.log({ m, internalData: m.data.m })
@@ -33,15 +60,17 @@ window.onmessage = m => {
             commentsSource = m.source;
         }
         if ((typeof m.data.m) === "object") {
-            if ("key" in m.data.m) keyHandler(m.data.m.key)
+            if ("key" in m.data.m) {
+                keyHandler((<mesgKeys>m.data.m).key)
+            }
             else if ("popup" in m.data.m){
-                if("visible" in m.data.m.popup){
+                if("visible" in (<mesgHidePopup|mesgPopup>m.data.m).popup){
                     showPopup(false);
                 }else{
-                    popupImg(m.data.m.popup)
+                    popupImg((<mesgPopup>m.data.m).popup)
                 }
             } 
-            else if ('click' in m.data.m) goToImg(m.data.m.click)
+            else if ('click' in m.data.m) goToImg((<mesgClick>m.data.m).click)
         }
     }
 }
@@ -239,33 +268,7 @@ function prepare(type: "Drawfriend") {
     console.log("Prepared")
 }
 
-class ImageGroup{
-    src?:string
-    imageSrc?:string[]
-    title?:string
-    author?:string
-    constructor({src,imageSrc,title,author}:{src?:string,imageSrc?:string[],title?:string,author?:string}){
-        this.src=src;
-        this.imageSrc=imageSrc;
-        this.title=title;
-        this.author=author;
-    }
-    private imgDiv:HTMLDivElement
-    private createDiv(){
-        let div = document.createElement('div');
-        this.imageSrc.forEach(src=>{
-            let imgEl=document.createElement('img')
-            imgEl.src=src;
-            div.appendChild(imgEl)
-        })
-        this.imgDiv=div;
-        return div;
-    }
-    getDiv(){
-        if(this.imgDiv !== undefined)return this.imgDiv
-        else return this.createDiv()
-    }
-}
+
 
 /** Organize DrawFriend posts into a array of Elements */
 function organizeDF() {
@@ -294,7 +297,8 @@ function organizeDF() {
                     src:el.href,
                     imageSrc:tempInfo.imageSrc,
                     title:tempInfo.title,
-                    author:tempInfo.author
+                    author:tempInfo.author,
+                    num:lastNumber
                 })
             }
             //TODO Add Saucy
@@ -376,6 +380,7 @@ function goToImg(img: number) {
     //docBody.scrollTop= distances[img]
 }
 
+
 function messageToComments(m) {
     if (commentsSource) {
         commentsSource.postMessage({ from: "EQDExtra", m }, "https://disqus.com")
@@ -383,33 +388,47 @@ function messageToComments(m) {
 }
 interface popup {
     from: string | number,
-    to: string | number
+    to: string | number,
+    x:number,
+    y:number
 }
-let lastPopup={from:0,to:0}
+let lastPopup={from:0,to:0},
+    wsize={x:window.innerWidth,y:window.innerHeight}
+
 function popupImg(imgs: popup) {
-    let from: number, to: number
+    let from: number, to: number,numOfI:number;
     if (typeof imgs.from === "string") from = parseInt(imgs.from,10)
     else from = imgs.from
     if (typeof imgs.to === "string") to = parseInt(imgs.to,10)
     else to = imgs.to
     console.log({ from, to });
     if(to === undefined)to=from;
+    numOfI=to-from+1
     if(lastPopup.from === from && lastPopup.to === to){
         showPopup(true)
+        setPopupLoc(imgs.x,imgs.y,numOfI)
         return
     }
     lastPopup = {from,to}
-    removeAllChildren(popupDiv)
+    let scrollBars =0;
     for(let i=from;i<=to;i++){
-        if(images[from] === undefined)continue
-        let div = document.createElement('div'),
-            text = document.createElement('textarea')
-        text.appendChild(document.createTextNode(i.toString()));
-        div.appendChild(images[i].getDiv());
-        div.appendChild(text);
-        popupDiv.appendChild(div);
+        if(images[i].imageSrc.length>1)scrollBars+=17
+    }
+    let maxHeight=(wsize.y-adjustBy-60-scrollBars-(numOfI-1)*21)/numOfI - 23;
+    console.log({maxHeight})
+    removeAllChildren(popupDiv)
+    let imageLoadCheck = new WhenAllLoaded(()=>{
+        setPopupLoc(imgs.x,imgs.y,numOfI)
+    })
+    for(let i=from;i<=to;i++){
+        if(images[i] === undefined)continue
+        popupDiv.appendChild(images[i].getDiv());
+        if(to!==i)popupDiv.appendChild(document.createElement('hr'))
+        images[i].setMax(maxHeight)
+        images[i].whenLoading(imageLoadCheck.add)
         console.log({append:i})
     }
+    imageLoadCheck.run()
     showPopup(true)
 }
 
@@ -423,6 +442,14 @@ function showPopup(show:boolean){
             popupDiv.classList.remove('show')
         }
     }
+}
+
+function setPopupLoc(x:number,y:number,numOfI:number){
+    wsize={x:window.innerWidth,y:window.innerHeight};
+    let divHeight = popupDiv.getBoundingClientRect().height,
+        moveBy = wsize.y - y - divHeight/2;
+    console.log({wsize,divHeight,moveBy,x,y})
+    if(moveBy > 20 && y-divHeight/2>adjustBy+20)popupDiv.style.bottom=moveBy.toString()+"px"
 }
 
 function removeAllChildren(el:Element){

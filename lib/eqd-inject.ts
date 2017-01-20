@@ -1,5 +1,6 @@
 import ElementRunner from './ElementRunner'
-import {ImageGroup,WhenAllLoaded} from './toolbox'
+import {ImageGroup} from './toolbox'
+import {Popup}from'./popup'
 let sorted: Element[],
     postContent: HTMLCollection,
     commentSection: HTMLDivElement,
@@ -15,8 +16,8 @@ let sorted: Element[],
     imgEndings = /\.(png|jpe?g|gif)$/,
     titleExtract = /(?:(.+)\s)?(?:by\s(.+))|(.+)/i,
     visibleCharacter = /[\w!"#$%&'()*+,.\/:;<=>?@\[\]^_`{|}~-]/g,
-    popupDiv: HTMLDivElement,
-    images:ImageGroup[]=[];
+    images:ImageGroup[]=[],
+    popup:Popup;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     currentLabels = getLabels();
@@ -65,9 +66,9 @@ window.onmessage = (m:mesgEvent) => {
             }
             else if ("popup" in m.data.m){
                 if("visible" in (<mesgHidePopup|mesgPopup>m.data.m).popup){
-                    showPopup(false);
+                    popup.show(false);
                 }else{
-                    popupImg((<mesgPopup>m.data.m).popup)
+                    popup.setImgs((<mesgPopup>m.data.m).popup)
                 }
             } 
             else if ('click' in m.data.m) goToImg((<mesgClick>m.data.m).click)
@@ -126,33 +127,18 @@ const enum Direction {
     up,
     down
 }
+
+let keyfuncs:{[key:string]:()=>any}={
+    g:()=>messageToComments("numbers")
+}
+
 /** Page Scroll function based on Keyboard keys */
 function keyHandler(key: string): boolean {
-    let status = false;
-    console.log(key)
-
-    // Scroll Direction Keys
-    if (sorted !== undefined) {
-        if (key == "ArrowUp") {
-            keyScroll(Direction.up)
-            status = true
-        } else if (key == "ArrowDown") {
-            keyScroll(Direction.down)
-            status = true
-        }
-    }
-
-    if (key == "g") {
-        messageToComments("numbers")
-        status = true;
-    }
-
-    // Comment Section Keys
-    if (commentSection !== undefined && (key == "'" || key == '"')) {
-        goToComment()
-        status = true;
-    }
-    return status;
+    console.log({key})
+    if(key in keyfuncs) {
+        keyfuncs[key]();
+        return true
+    }else return false
 }
 //window.scroll({ top: 5 } as ScrollToOptions)
 
@@ -223,11 +209,9 @@ const preparations = {
 function prepare(type: "Drawfriend") {
     docBody = <HTMLBodyElement>document.body
 
-    popupDiv = document.createElement('div');
-    popupDiv.classList.add('imgPopup');
-    docBody.appendChild(popupDiv);
-
     commentSection = <HTMLDivElement>document.getElementsByClassName("post-comments")[0]
+    keyfuncs['"']=goToComment
+    keyfuncs["'"]=goToComment
 
     let saucyCheck = document.createElement('label'),
         saucyCheckBox = document.createElement('input');
@@ -242,7 +226,7 @@ function prepare(type: "Drawfriend") {
     saucyCheck.appendChild(document.createTextNode(" Show Saucy"));
     document.getElementsByClassName("settings-content")[0].appendChild(saucyCheck);
 
-    if (sorted) return;
+    if (sorted !== undefined) return;
 
     postContent = document.getElementsByClassName("post-body")[0].children
     console.log({children:postContent.length})
@@ -254,6 +238,11 @@ function prepare(type: "Drawfriend") {
     docBody.onscroll = findNearestPos
     adjustBy = navbar.checked ? 50 : 0
     sorted = preparations[type]()
+    popup= new Popup(images,adjustBy)
+    keyfuncs['s']=()=>popup.show(true)
+    keyfuncs['ArrowUp']=()=> keyScroll(Direction.up)
+    keyfuncs['ArrowDown']=()=> keyScroll(Direction.down)
+
     console.log("sorted")
     console.log({sorted})
     docBody.onkeydown = keyEv => {
@@ -386,74 +375,5 @@ function messageToComments(m) {
         commentsSource.postMessage({ from: "EQDExtra", m }, "https://disqus.com")
     }
 }
-interface popup {
-    from: string | number,
-    to: string | number,
-    x:number,
-    y:number
-}
-let lastPopup={from:0,to:0},
-    wsize={x:window.innerWidth,y:window.innerHeight}
 
-function popupImg(imgs: popup) {
-    let from: number, to: number,numOfI:number;
-    if (typeof imgs.from === "string") from = parseInt(imgs.from,10)
-    else from = imgs.from
-    if (typeof imgs.to === "string") to = parseInt(imgs.to,10)
-    else to = imgs.to
-    console.log({ from, to });
-    if(to === undefined)to=from;
-    numOfI=to-from+1
-    if(lastPopup.from === from && lastPopup.to === to){
-        showPopup(true)
-        setPopupLoc(imgs.x,imgs.y,numOfI)
-        return
-    }
-    lastPopup = {from,to}
-    let scrollBars =0;
-    for(let i=from;i<=to;i++){
-        if(images[i].imageSrc.length>1)scrollBars+=17
-    }
-    let maxHeight=(wsize.y-adjustBy-60-scrollBars-(numOfI-1)*21)/numOfI - 23;
-    console.log({maxHeight})
-    removeAllChildren(popupDiv)
-    let imageLoadCheck = new WhenAllLoaded(()=>{
-        setPopupLoc(imgs.x,imgs.y,numOfI)
-    })
-    for(let i=from;i<=to;i++){
-        if(images[i] === undefined)continue
-        popupDiv.appendChild(images[i].getDiv());
-        if(to!==i)popupDiv.appendChild(document.createElement('hr'))
-        images[i].setMax(maxHeight)
-        images[i].whenLoading(imageLoadCheck.add)
-        console.log({append:i})
-    }
-    imageLoadCheck.run()
-    showPopup(true)
-}
 
-function showPopup(show:boolean){
-    let shown = popupDiv.classList.contains('show');
-    if(show !== shown){
-        console.log({show,shown})
-        if(show){
-            popupDiv.classList.add('show')
-        }else{
-            popupDiv.classList.remove('show')
-        }
-    }
-}
-
-function setPopupLoc(x:number,y:number,numOfI:number){
-    wsize={x:window.innerWidth,y:window.innerHeight};
-    let divHeight = popupDiv.getBoundingClientRect().height,
-        moveBy = wsize.y - y - divHeight/2;
-    console.log({wsize,divHeight,moveBy,x,y})
-    if(moveBy > 20 && y-divHeight/2>adjustBy+20)popupDiv.style.bottom=moveBy.toString()+"px"
-}
-
-function removeAllChildren(el:Element){
-    while(popupDiv.firstChild){
-        popupDiv.removeChild(popupDiv.firstChild)
-    }
-}

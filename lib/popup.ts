@@ -55,10 +55,9 @@ export class Popup {
             this.setLoc(popInfo.x, popInfo.y)
             return
         }
-        this.last = { from, to }
         let scrollBars = 0;
         for (let i = from; i <= to; i++) {
-            if (this.images[i].imageSrc.length > 1) scrollBars += 17
+            if (this.images[i] !== undefined && this.images[i].imageSrc.length > 1) scrollBars += 17
         }
         console.log({ height: window.innerHeight, adjust: this.adjustHeight, scrollBars, numOfI })
         let maxHeight = (window.innerHeight - this.adjustHeight - 60 - scrollBars - (numOfI - 1) * 21) / numOfI - 23;
@@ -67,6 +66,7 @@ export class Popup {
         let imageLoadCheck = new WhenAllLoaded(() => {
             this.setLoc(popInfo.x, popInfo.y)
         })
+        let added = 0;
         for (let i = from; i <= to; i++) {
             if (this.images[i] === undefined) continue
             this.popupDiv.appendChild(this.images[i].getDiv());
@@ -74,7 +74,10 @@ export class Popup {
             this.images[i].setMax(maxHeight)
             this.images[i].whenLoading(imageLoadCheck.add)
             console.log({ append: i })
+            added++;
         }
+        if (added === 0) return
+        this.last = { from, to }
         imageLoadCheck.run()
         this.show(true)
     }

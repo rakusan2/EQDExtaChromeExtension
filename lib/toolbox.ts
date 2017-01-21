@@ -5,13 +5,15 @@ export class ImageGroup {
     author?: string
     num?: number
     loaded: boolean
-    constructor({src, imageSrc, title, author, num}: { src?: string, imageSrc?: string[], title?: string, author?: string, num?: number }) {
+    numToDist: number
+    constructor({src, imageSrc, title, author, num, numToDist}: { src?: string, imageSrc?: string[], title?: string, author?: string, num?: number, numToDist: number }) {
         this.src = src;
         this.imageSrc = imageSrc;
         this.title = title;
         this.author = author;
         this.num = num
         this.loaded = false
+        this.numToDist = numToDist
     }
     private imgDiv: HTMLDivElement
     private images: HTMLImageElement[]

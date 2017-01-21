@@ -88,6 +88,7 @@ function getLabels(): string[] {
 }
 
 function updateDist() {
+    console.log('updating distances')
     for (let i = 3; i < distances.length; i++) {
         distances[i] = (<HTMLElement>sorted[i]).offsetTop - adjustBy
     }
@@ -257,8 +258,6 @@ function prepare(type: "Drawfriend") {
     console.log("Prepared")
 }
 
-
-
 /** Organize DrawFriend posts into a array of Elements */
 function organizeDF() {
     console.log("organizeDF")
@@ -279,15 +278,16 @@ function organizeDF() {
     }).addBranch('B', b => {
         b.add('A', el => {
             let innerNumber: RegExpExecArray
-            if ((innerNumber = /\d+/.exec(el.innerText)) !== null) {
-                lastNumber = parseInt(innerNumber[0], 10)
+            if ((innerNumber = /\[(1?\d{1,2})\]/.exec(el.innerText)) !== null) {
+                lastNumber = parseInt(innerNumber[1], 10)
                 console.log({ lastNumber })
                 images[lastNumber] = new ImageGroup({
                     src: el.href,
                     imageSrc: tempInfo.imageSrc,
                     title: tempInfo.title,
                     author: tempInfo.author,
-                    num: lastNumber
+                    num: lastNumber,
+                    numToDist: distances.length
                 })
             }
             //TODO Add Saucy
@@ -366,7 +366,10 @@ function goToComment() {
 }
 
 function goToImg(img: number) {
-    //docBody.scrollTop= distances[img]
+    console.log({ img, group: images[img], distances })
+    if (images[img] !== undefined) {
+        docBody.scrollTop = distances[images[img].numToDist]
+    }
 }
 
 

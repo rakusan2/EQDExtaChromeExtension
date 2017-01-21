@@ -1,6 +1,6 @@
 import ElementRunner from './ElementRunner';
 const keys = /^(ArrowDown|ArrowUp|'|"|g)$/,
-    commentNumbers = /(?::|#|are|(?:\b|\D)(?:(?:\d{1,2}|1\d{2})\b(?:\s?-\s?(?:\d{1,2}|1\d{2})(?=\D))?)?\s?(?:and|&)|(?:\b|\D)(?:\d{1,2}|1\d{2})\b(?:\s?-\s?(?:\d{1,2}|1\d{2})(?=\D))?\s?,)\s?(?:\d{1,2}|1\d{2})\b(?:\s?-\s?(?:\d{1,2}|1\d{2})(?=\D))?(?:\s?,\s?(?:\d{1,2}|1\d{2})(?:(?=\D)|$)(?:\s?-\s?(?:\d{1,2}|1\d{2})(?:(?=\D)|$))?)*|^\s?(?:\d{1,2}|1\d{2})\b(?:\s?-\s?(?:\d{1,2}|1\d{2}))?\s?(?:\.(?=\D)|$|:)/gi,
+    commentNumbers = /(fi(?:m|endship)\s?)?(?::|#|are|(?:\b|\D)(?:(?:1?\d{1,2})\b(?:\s?-\s?(?:1?\d{1,2})(?=\D))?)?\s?(?:and|&)|(?:\b|\D)(?:1?\d{1,2})\b(?:\s?-\s?(?:1?\d{1,2})(?=\D))?\s?,)\s?(?:1?\d{1,2})\b(?:\s?-\s?(?:1?\d{1,2})(?=\D))?(?:\s?,\s?(?:1?\d{1,2})(?:(?=\D)|$)(?:\s?-\s?(?:1?\d{1,2})(?:(?=\D)|$))?)*|^\s?(?:1?\d{1,2})\b(?:\s?-\s?(?:1?\d{1,2}))?\s?(?:\.(?=\D)|$|:)/gi,
     extractNumber = /(\d+)(?:\s?-\s?(\d+))?/g
 let hasNumbers = false;
 
@@ -69,6 +69,7 @@ function getNumbers() {
                     lastEnd = 0,
                     fragment: DocumentFragment;
                 while ((m = commentNumbers.exec(nodeText)) !== null) {
+                    if (m[1] !== undefined) continue
                     while ((num = extractNumber.exec(m[0])) !== null) {
                         if (fragment === undefined) fragment = document.createDocumentFragment()
                         if (m.index + num.index > lastEnd) {

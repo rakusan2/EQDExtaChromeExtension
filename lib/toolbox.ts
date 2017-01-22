@@ -6,6 +6,7 @@ export class ImageGroup {
     num?: number
     loaded: boolean
     numToDist: number
+    saucy:boolean
     constructor({src, imageSrc, title, author, num, numToDist}: { src?: string, imageSrc?: string[], title?: string, author?: string, num?: number, numToDist: number }) {
         this.src = src;
         this.imageSrc = imageSrc;
@@ -14,6 +15,7 @@ export class ImageGroup {
         this.num = num
         this.loaded = false
         this.numToDist = numToDist
+        this.saucy=false
     }
     private imgDiv: HTMLDivElement
     private images: HTMLImageElement[]

@@ -4,9 +4,10 @@ const keys = /^(ArrowDown|ArrowUp|'|"|g)$/,
     extractNumber = /(\d+)(?:\s?-\s?(\d+))?/g
 let hasNumbers = false;
 
-if (window.self !== window.top && /disqus\.com\/embed\/comments/i.test(document.URL)) {
+if (window.self !== window.top) {
     window.onmessage = function (this, mesg: MessageEvent) {
-        if (/equestriadaily\.com/i.test(mesg.origin) && (typeof mesg.data) === "object") {
+        //console.log({from:mesg.origin,data:mesg.data});
+        if (/equestriadaily\.com/i.test(mesg.origin) && (typeof mesg.data === "object")) {
             if (mesg.data.m === "click") comment();
             if (mesg.data.m === "numbers") getNumbers()
         }

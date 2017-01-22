@@ -85,7 +85,7 @@ export class Popup {
 
 export interface popupInfo {
     from: string | number,
-    to: string | number,
+    to?: string | number,
     x: number,
     y: number
 }

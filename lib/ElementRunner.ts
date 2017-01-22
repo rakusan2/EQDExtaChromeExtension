@@ -2,7 +2,7 @@ type branchSplit = {[key:string] :ElementTask}
 interface ElementTask{
     nextElements:branchSplit,
     task?:(element?:Node)=>any,
-    failTask?:(element?:Node)=>any
+    onFail?:(element?:Node)=>any,
     final:boolean
 }
 document.createElement('div')
@@ -34,7 +34,7 @@ class ElementTree{
     addBranch(name:string,additional:(a:ElementTree)=>any,onFail?:(element?:Node)=>any){
         this.elementTaskTree.nextElements[name]={nextElements:{},final:true};
         additional(new ElementTree(this.elementTaskTree.nextElements[name]))
-        if(onFail!== undefined)this.elementTaskTree.failTask=onFail
+        if(onFail!== undefined)this.elementTaskTree.nextElements[name].onFail = onFail
         this.elementTaskTree.final=false
         return this;
     }
@@ -42,30 +42,31 @@ class ElementTree{
 
 export default class ElementRunner extends ElementTree{
     runCollection(elements:HTMLCollection){
-        console.log({tree:this.elementTaskTree})
+        console.log({tree:this.elementTaskTree,elements})
         this.runTaskCollection(elements,this.elementTaskTree)
     }
     run(element:Element){
         this.runTask(element,this.elementTaskTree)
     }
     private runTask(element:Node,tree:ElementTask){
-        if(!element)return;
-        if(element.nodeName in tree.nextElements){
-            let run=false
-            let nextBranch = tree.nextElements[element.nodeName]
+        if(element !== undefined && element.nodeName in tree.nextElements){
+            let nextBranch = tree.nextElements[element.nodeName],test=false
+            this.runTaskCollection(element.childNodes,nextBranch,element)
             if("task" in nextBranch){
                 nextBranch.task(element);
-                run=true
+                test=true
             }
-            return this.runTaskCollection(element.childNodes,nextBranch) || run
-        }
+            return test
+        }else return false
     }
-    private runTaskCollection(elements:NodeList,tree:ElementTask):boolean{
+    private runTaskCollection(elements:NodeList,tree:ElementTask,el?:Node):boolean{
         if(tree.final)return;
         let run = false
         for(let i=0;i<elements.length;i++){
             run = this.runTask(elements[i],tree) || run
         }
-        return run
+        if(!run && tree.onFail !== undefined){
+            tree.onFail(el)
+        }
     }
 }

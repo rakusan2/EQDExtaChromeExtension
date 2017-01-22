@@ -49,29 +49,75 @@ interface mesgEvent extends MessageEvent {
     data: {
         from: string,
         m: mesgPopup | mesgHidePopup | mesgKeys | mesgClick
-    }
+    } | string
 }
+interface dsqMesg {
+    scope: "host",
+    sender: string
+}
+interface dsqReady extends dsqMesg {
+    data: any[],
+    name: "ready"
+}
+interface dsqResize extends dsqMesg {
+    data: {
+        height: number
+    }
+    name: "resize"
+}
+interface dsqPostCount extends dsqMesg {
+    data: number,
+    name: "posts.count"
+}
+interface dsqRendered extends dsqMesg {
+    data: {
+        height: number
+    }
+    name: "rendered"
+}
+interface dsqSessionIdentity extends dsqMesg {
+    data: any[] | string,
+    name: "session.identity"
+}
+interface dsqFakeScroll extends dsqMesg {
+    data: any[],
+    name: "fakeScroll"
+}
+interface dsqHomePreload extends dsqMesg {
+    data: {},
+    name: "home.preload"
+}
+
+type dsq = dsqReady | dsqResize | dsqPostCount | dsqRendered | dsqSessionIdentity | dsqFakeScroll | dsqHomePreload;
 
 window.onmessage = (m: mesgEvent) => {
     //console.log({m,dataType:typeof m.data})
-    if (m.origin === "https://disqus.com" && (typeof m.data) === "object" && "from" in m.data) {
-        console.log({ m, internalData: m.data.m })
-        if (commentsSource === undefined) {
-            console.log("source is set")
-            commentsSource = m.source;
-        }
-        if ((typeof m.data.m) === "object") {
-            if ("key" in m.data.m) {
-                keyHandler((<mesgKeys>m.data.m).key)
+    if (m.origin === "https://disqus.com") {
+        let dsqData: dsq;
+        if (typeof m.data === "string") dsqData = JSON.parse(m.data) as dsq
+        console.log({ dsqData })
+        if ((typeof m.data === "object") && "from" in m.data) {
+            console.log({ m, internalData: m.data.m })
+            if (commentsSource === undefined) {
+                console.log("source is set")
+                commentsSource = m.source;
             }
-            else if ("popup" in m.data.m) {
-                if ("visible" in (<mesgHidePopup | mesgPopup>m.data.m).popup) {
-                    popup.show(false);
-                } else {
-                    popup.setImgs((<mesgPopup>m.data.m).popup)
+            if (typeof m.data.m === "object") {
+                if ("key" in m.data.m) {
+                    keyHandler((<mesgKeys>m.data.m).key)
                 }
+                else if ("popup" in m.data.m) {
+                    if ("visible" in (<mesgHidePopup | mesgPopup>m.data.m).popup) {
+                        popup.show(false);
+                    } else {
+                        popup.setImgs((<mesgPopup>m.data.m).popup)
+                    }
+                }
+                else if ('click' in m.data.m) goToImg((<mesgClick>m.data.m).click)
             }
-            else if ('click' in m.data.m) goToImg((<mesgClick>m.data.m).click)
+        }
+        if((typeof dsqData === "object") && "sender" in dsqData && dsqData.name === "rendered" && dsqData.sender === "dsq-app1"){
+            messageToComments("numbers")
         }
     }
 }
@@ -129,9 +175,7 @@ const enum Direction {
     down
 }
 
-let keyfuncs: { [key: string]: () => any } = {
-    g: () => messageToComments("numbers")
-}
+let keyfuncs: { [key: string]: () => any } = {}
 
 /** Page Scroll function based on Keyboard keys */
 function keyHandler(key: string): boolean {
@@ -161,7 +205,9 @@ function keyScroll(dir: Direction) {
 interface saucyPost {
     element: Element,
     img: HTMLImageElement,
-    text: string
+    text: string,
+    showHandler:(ev:MouseEvent)=>any,
+    hideHandler:(ev:MouseEvent)=>any
 }
 let saucyPosts: saucyPost[] = []
 function showSaucy(checked: boolean) {
@@ -170,34 +216,19 @@ function showSaucy(checked: boolean) {
     localStorage.setItem("EQD-Saucy", checked.toString())
     console.log('Saucy Event')
     if (checked) {
-        if (saucyPosts.length > 0) {
-            console.log("injecting known Saucy")
-            saucyPosts.forEach(el => {
-                el.element.appendChild(el.img)
-            })
-        } else {
-            console.log("injecting unknown Saucy")
-            for (let i = 0; i < postContent.length; i++) {
-
-                if (postContent[i].nodeName == "DIV" && postContent[i].children.length > 0 && postContent[i].firstElementChild.children.length == 0) {
-                    console.log(postContent[i])
-                    let imgElement = document.createElement('img'),
-                        anchorElement = <HTMLAnchorElement>postContent[i].firstElementChild;
-                    imgElement.src = anchorElement.href
-                    saucyPosts.push({
-                        element: anchorElement,
-                        img: imgElement,
-                        text: anchorElement.textContent
-                    })
-                    anchorElement.appendChild(imgElement);
-                }
-            }
-        }
+        console.log("injecting known Saucy")
+        saucyPosts.forEach(el => {
+            el.element.appendChild(el.img)
+            el.element.addEventListener('mouseover',el.showHandler)
+            el.element.addEventListener('mouseleave',el.hideHandler)
+        })
     }
     else {
         console.log("removing Saucy")
         saucyPosts.forEach(el => {
             el.element.removeChild(el.img)
+            el.element.removeEventListener('mouseover',el.showHandler)
+            el.element.removeEventListener('mouseleave',el.hideHandler)
         })
     }
     updateDistOnNextMove = true;
@@ -218,7 +249,8 @@ function prepare(type: "Drawfriend") {
         saucyCheckBox = document.createElement('input');
     saucyCheckBox.id = 'setting-show-saucy';
     saucyCheckBox.type = 'checkbox';
-    saucyCheckBox.checked = localStorage.getItem('EQD-Saucy') === "true"
+    isSaucy = localStorage.getItem('EQD-Saucy') === "true"
+    saucyCheckBox.checked = isSaucy
     if (type === "Drawfriend") {
         console.log("Add Show Saucy")
         saucyCheckBox.addEventListener('change', function (this: HTMLInputElement) { showSaucy(this.checked) }, false)
@@ -253,7 +285,6 @@ function prepare(type: "Drawfriend") {
         }
     }
     findNearestPos();
-    showSaucy(saucyCheckBox.checked)
     console.log(images)
     console.log("Prepared")
 }
@@ -262,7 +293,7 @@ function prepare(type: "Drawfriend") {
 function organizeDF() {
     console.log("organizeDF")
     let lastNumber = 0;
-    let tempInfo = { title: "", author: "", imageSrc: [] as string[] }
+    let tempInfo = { title: "", author: "", imageSrc: [] as string[],saucy:false }
     let elements = [docBody, document.getElementsByClassName("blog-post")[0]];
     let unclaimedHR = false,
         lastHrHeight = 0,
@@ -274,7 +305,7 @@ function organizeDF() {
         lastHrHeight = el.offsetTop - adjustBy
         lastHR = el
         unclaimedHR = true;
-        tempInfo = { title: "", author: "", imageSrc: [] as string[] };
+        tempInfo = { title: "", author: "", imageSrc: [] as string[] ,saucy:false};
     }).addBranch('B', b => {
         b.add('A', el => {
             let innerNumber: RegExpExecArray
@@ -320,8 +351,25 @@ function organizeDF() {
                 } else tempInfo.imageSrc.push(el.src)
                 unclaimedHR = false
             })
+        },el => {
+            if (unclaimedHR) {
+                elements.push(lastHR)
+                distances.push(lastHrHeight)
+            } else {
+                elements.push(el)
+                distances.push(el.offsetTop - adjustBy)
+            }
+            if (images[lastNumber]) {
+                images[lastNumber].imageSrc.push(el.href)
+                images[lastNumber].saucy=true
+            } else {
+                tempInfo.imageSrc.push(el.href)
+                tempInfo.saucy=true
+            }
+            unclaimedHR = false
+            addSaucy(el,lastNumber)
         })
-    }).add('A', el => {
+    }).add('A',el=>{
         if (imgEndings.test(el.href)) {
             if (!visibleCharacter.test(el.innerText)) {
                 el.remove()
@@ -337,9 +385,57 @@ function organizeDF() {
             tempDiv.appendChild(el)
             console.log("replacing")
             console.log(el)
+
+            if (unclaimedHR) {
+                elements.push(lastHR)
+                distances.push(lastHrHeight)
+            } else {
+                elements.push(tempDiv)
+                distances.push(el.offsetTop - adjustBy)
+            }
+            if (images[lastNumber]) {
+                images[lastNumber].imageSrc.push(el.href)
+                images[lastNumber].saucy=true
+            } else {
+                tempInfo.imageSrc.push(el.href)
+                tempInfo.saucy=true
+            }
+            unclaimedHR = false
+            addSaucy(el,lastNumber)
         }
     }).runCollection(postContent)
     return elements;
+}
+
+function saucyPopupHandler(num:number,show:boolean){
+    if(show)return function (this:HTMLImageElement,ev:MouseEvent){
+        popup.setImgs({from:num, x:ev.screenX,y:ev.screenY})
+    }
+    else return function(this:HTMLImageElement,ev:MouseEvent){
+        popup.show(false)
+    }
+}
+
+function addSaucy(anchor:HTMLAnchorElement,num:number){
+    console.log({saucy:anchor})
+    let imgEl = document.createElement('img'),
+        showSPopup=saucyPopupHandler(num,true),
+        hideSpopup=saucyPopupHandler(num,false)
+    imgEl.src=anchor.href;
+    imgEl.style.maxHeight="650px"
+    imgEl.style.maxHeight="650px"
+    saucyPosts.push({
+        element:anchor,
+        img:imgEl,
+        text:(<Text>anchor.firstChild).data,
+        showHandler:showSPopup,
+        hideHandler:hideSpopup
+    })
+    if(isSaucy)anchor.appendChild(imgEl)
+    else{
+        anchor.addEventListener('mouseover',showSPopup)
+        anchor.addEventListener('mouseleave',hideSpopup)
+    }
 }
 
 function relocateSettings() {

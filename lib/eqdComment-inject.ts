@@ -101,7 +101,7 @@ function getNumbers() {
                     el.parentNode.replaceChild(fragment, el);
                 }
             })
-        })
+        },true)
     }).runCollection(messages);
 }
 

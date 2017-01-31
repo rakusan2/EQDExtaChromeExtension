@@ -83,3 +83,31 @@ export class WhenAllLoaded {
         else this.running = true;
     }
 }
+
+export class ImageLoader{
+    private img:{
+        tag:HTMLImageElement
+        src:string
+    }[]
+    private loadingNum:number
+    private loadSrc:string
+    constructor(loadSrc:string){
+        this.img=[]
+        this.loadSrc = loadSrc
+        this.loadingNum =0
+    }
+    addImage(el:HTMLImageElement){
+        console.log('Loading Image')
+        let src = el.src;
+        el.src = this.loadSrc
+        //if(this.loadingNum < 5){
+        //    
+        //}else{
+        //    this.img.push({
+        //        tag:el,
+        //        src:el.src
+        //    })
+        //}
+        //el.src=this.loadSrc
+    }
+}

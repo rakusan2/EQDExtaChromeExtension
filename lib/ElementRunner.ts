@@ -6,8 +6,7 @@ interface ElementTask {
     final: boolean,
     stop: boolean
 }
-document.createElement('div')
-interface ElementMap {
+export interface ElementMap {
     "A": HTMLAnchorElement,
     "DIV": HTMLDivElement,
     "#text": Text,
@@ -16,8 +15,7 @@ interface ElementMap {
     'P': HTMLParagraphElement,
     'B': Element
 }
-document.createElement
-class ElementTree {
+export class ElementTree {
     elementTaskTree: ElementTask
     constructor(task?: ElementTask) {
         if (task && 'nextElements' in task) this.elementTaskTree = task
@@ -46,7 +44,7 @@ class ElementTree {
     }
 }
 
-export default class ElementRunner extends ElementTree {
+export class ElementRunner extends ElementTree {
     private toRun:(()=>any)[]=[]
     runCollection(elements: HTMLCollection) {
         console.log({ tree: this.elementTaskTree, elements })

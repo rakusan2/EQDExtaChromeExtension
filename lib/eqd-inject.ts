@@ -1,5 +1,5 @@
-import ElementRunner from './ElementRunner'
-import { ImageGroup } from './toolbox'
+import {ElementRunner} from './ElementRunner'
+import { ImageGroup, ImageLoader } from './toolbox'
 import { Popup } from './popup'
 let sorted: Element[],
     postContent: HTMLCollection,
@@ -17,14 +17,84 @@ let sorted: Element[],
     titleExtract = /(?:(.+)\s)?(?:by\s(.+))|(.+)/i,
     visibleCharacter = /[\w!"#$%&'()*+,.\/:;<=>?@\[\]^_`{|}~-]/g,
     images: ImageGroup[] = [],
-    popup: Popup;
+    popup: Popup,
+    observerOptions: MutationObserverInit = { childList: true },
+    avoidCache = /^sizcache/,
+    observers:MutationObserver[] = [],
+    imgLoader = new ImageLoader(chrome.extension.getURL('images/loading.svg'))
+//loadingImageURL = chrome.extension.getURL('images/loading.svg')
+
+addEventListener('DOMContentLoaded',stopObservers)
+
+let obNum = 0;
+new MutationObserver((record, obs) => {
+    console.log({observer:obNum,record})
+    record.forEach(e => {
+        if (e.addedNodes.length>0 && e.addedNodes[0].nodeName === "BODY") {
+            console.log('found body')
+            console.log({body:document.body,div:document.body.children[0]})
+            showElements(document.body.children[0])
+            observe(e.addedNodes[0])
+        }
+    })
+}).observe(document.documentElement, observerOptions);
+
+function showElements(i:Object){
+    for(let name in i){
+        console.log({name,content:i[name]})
+    }
+}
+
+function observe(obNode: Node) {
+    console.log({observe:obNum})
+    obNum++
+    let obs = new MutationObserver((record, obs) => {
+        console.log({observer:obNum,obNode,record})
+        record.forEach(el => {
+            let n = el.addedNodes;
+            for (let i = 0; i < n.length; i++) {
+                console.log({found:n[i].nodeName})
+                if(n[i].nodeName === 'IMG')imgLoader.addImage(n[i] as HTMLImageElement)
+                else if (safeNode(n[i])) observe(n[i])
+            }
+        })
+    })
+    obs.observe(obNode,observerOptions)
+    observers.push(obs)
+}
+let avoidNames = {
+    '#text': true,
+    IFRAME: true,
+    SCRIPT: true
+}, avoidId = {
+    header: true
+}
+function safeNode(el: Node) {
+    if (el.nodeName in avoidNames) {
+        return false
+    }
+    if (avoidCache.test((<Element>el).id) || ((<Element>el).id) in avoidId) {
+        return false
+    }
+    console.log({safe:el.nodeName})
+    return true
+}
+
+function stopObservers(){
+    while(observers.length > 0){
+        observers.pop().disconnect()
+    }
+}
+
+console.log({ document, length: document.all.length })
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     currentLabels = getLabels();
     sendResponse(currentLabels);
-    if (currentLabels.indexOf("Drawfriend") >= 0) prepare("Drawfriend");
+    //if (currentLabels.indexOf("Drawfriend") >= 0) prepare("Drawfriend");
+    stopObservers();
     relocateSettings();
-})
+});
 
 interface mesgPopup {
     popup: {
@@ -89,7 +159,7 @@ interface dsqHomePreload extends dsqMesg {
 }
 
 type dsq = dsqReady | dsqResize | dsqPostCount | dsqRendered | dsqSessionIdentity | dsqFakeScroll | dsqHomePreload;
-
+console.log('Adding Messaging')
 window.onmessage = (m: mesgEvent) => {
     //console.log({m,dataType:typeof m.data})
     if (m.origin === "https://disqus.com") {
@@ -116,7 +186,7 @@ window.onmessage = (m: mesgEvent) => {
                 else if ('click' in m.data.m) goToImg((<mesgClick>m.data.m).click)
             }
         }
-        if((typeof dsqData === "object") && "sender" in dsqData && dsqData.name === "rendered" && dsqData.sender === "dsq-app1"){
+        if ((typeof dsqData === "object") && "sender" in dsqData && dsqData.name === "rendered" && dsqData.sender === "dsq-app1") {
             messageToComments("numbers")
         }
     }
@@ -206,8 +276,8 @@ interface saucyPost {
     element: Element,
     img: HTMLImageElement,
     text: string,
-    showHandler:(ev:MouseEvent)=>any,
-    hideHandler:(ev:MouseEvent)=>any
+    showHandler: (ev: MouseEvent) => any,
+    hideHandler: (ev: MouseEvent) => any
 }
 let saucyPosts: saucyPost[] = []
 function showSaucy(checked: boolean) {
@@ -219,16 +289,16 @@ function showSaucy(checked: boolean) {
         console.log("injecting known Saucy")
         saucyPosts.forEach(el => {
             el.element.appendChild(el.img)
-            el.element.addEventListener('mouseover',el.showHandler)
-            el.element.addEventListener('mouseleave',el.hideHandler)
+            el.element.addEventListener('mouseover', el.showHandler)
+            el.element.addEventListener('mouseleave', el.hideHandler)
         })
     }
     else {
         console.log("removing Saucy")
         saucyPosts.forEach(el => {
             el.element.removeChild(el.img)
-            el.element.removeEventListener('mouseover',el.showHandler)
-            el.element.removeEventListener('mouseleave',el.hideHandler)
+            el.element.removeEventListener('mouseover', el.showHandler)
+            el.element.removeEventListener('mouseleave', el.hideHandler)
         })
     }
     updateDistOnNextMove = true;
@@ -293,7 +363,7 @@ function prepare(type: "Drawfriend") {
 function organizeDF() {
     console.log("organizeDF")
     let lastNumber = 0;
-    let tempInfo = { title: "", author: "", imageSrc: [] as string[],saucy:false }
+    let tempInfo = { title: "", author: "", imageSrc: [] as string[], saucy: false }
     let elements = [docBody, document.getElementsByClassName("blog-post")[0]];
     let unclaimedHR = false,
         lastHrHeight = 0,
@@ -305,7 +375,7 @@ function organizeDF() {
         lastHrHeight = el.offsetTop - adjustBy
         lastHR = el
         unclaimedHR = true;
-        tempInfo = { title: "", author: "", imageSrc: [] as string[] ,saucy:false};
+        tempInfo = { title: "", author: "", imageSrc: [] as string[], saucy: false };
     }).addBranch('B', b => {
         b.add('A', el => {
             let innerNumber: RegExpExecArray
@@ -351,7 +421,7 @@ function organizeDF() {
                 } else tempInfo.imageSrc.push(el.src)
                 unclaimedHR = false
             })
-        },el => {
+        }, false, el => {
             if (unclaimedHR) {
                 elements.push(lastHR)
                 distances.push(lastHrHeight)
@@ -361,15 +431,15 @@ function organizeDF() {
             }
             if (images[lastNumber]) {
                 images[lastNumber].imageSrc.push(el.href)
-                images[lastNumber].saucy=true
+                images[lastNumber].saucy = true
             } else {
                 tempInfo.imageSrc.push(el.href)
-                tempInfo.saucy=true
+                tempInfo.saucy = true
             }
             unclaimedHR = false
-            addSaucy(el,lastNumber)
+            addSaucy(el, lastNumber)
         })
-    }).add('A',el=>{
+    }).add('A', el => {
         if (imgEndings.test(el.href)) {
             if (!visibleCharacter.test(el.innerText)) {
                 el.remove()
@@ -395,46 +465,46 @@ function organizeDF() {
             }
             if (images[lastNumber]) {
                 images[lastNumber].imageSrc.push(el.href)
-                images[lastNumber].saucy=true
+                images[lastNumber].saucy = true
             } else {
                 tempInfo.imageSrc.push(el.href)
-                tempInfo.saucy=true
+                tempInfo.saucy = true
             }
             unclaimedHR = false
-            addSaucy(el,lastNumber)
+            addSaucy(el, lastNumber)
         }
     }).runCollection(postContent)
     return elements;
 }
 
-function saucyPopupHandler(num:number,show:boolean){
-    if(show)return function (this:HTMLImageElement,ev:MouseEvent){
-        popup.setImgs({from:num, x:ev.screenX,y:ev.screenY})
+function saucyPopupHandler(num: number, show: boolean) {
+    if (show) return function (this: HTMLImageElement, ev: MouseEvent) {
+        popup.setImgs({ from: num, x: ev.screenX, y: ev.screenY })
     }
-    else return function(this:HTMLImageElement,ev:MouseEvent){
+    else return function (this: HTMLImageElement, ev: MouseEvent) {
         popup.show(false)
     }
 }
 
-function addSaucy(anchor:HTMLAnchorElement,num:number){
-    console.log({saucy:anchor})
+function addSaucy(anchor: HTMLAnchorElement, num: number) {
+    console.log({ saucy: anchor })
     let imgEl = document.createElement('img'),
-        showSPopup=saucyPopupHandler(num,true),
-        hideSpopup=saucyPopupHandler(num,false)
-    imgEl.src=anchor.href;
-    imgEl.style.maxHeight="650px"
-    imgEl.style.maxHeight="650px"
+        showSPopup = saucyPopupHandler(num, true),
+        hideSpopup = saucyPopupHandler(num, false)
+    imgEl.src = anchor.href;
+    imgEl.style.maxHeight = "650px"
+    imgEl.style.maxHeight = "650px"
     saucyPosts.push({
-        element:anchor,
-        img:imgEl,
-        text:(<Text>anchor.firstChild).data,
-        showHandler:showSPopup,
-        hideHandler:hideSpopup
+        element: anchor,
+        img: imgEl,
+        text: (<Text>anchor.firstChild).data,
+        showHandler: showSPopup,
+        hideHandler: hideSpopup
     })
-    if(isSaucy)anchor.appendChild(imgEl)
-    else{
-        anchor.addEventListener('mouseover',showSPopup)
-        anchor.addEventListener('mouseleave',hideSpopup)
+    if (isSaucy) anchor.appendChild(imgEl)
+    else {
+        anchor.addEventListener('mouseover', showSPopup)
+        anchor.addEventListener('mouseleave', hideSpopup)
     }
 }
 

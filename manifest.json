@@ -38,5 +38,8 @@
     },
     "permissions":[
         "tabs"
+    ],
+    "web_accessible_resources": [
+        "images/loading.svg"
     ]
 }

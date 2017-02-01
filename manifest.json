@@ -9,7 +9,7 @@
     },
     "content_scripts":[
         {
-            "matches":["http://www.equestriadaily.com/*/**"],
+            "matches":["*://www.equestriadaily.com/*/**"],
             "js":["lib/eqd-inject.js"],
             "css":["lib/eqd.css"],
             "run_at": "document_start"

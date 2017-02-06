@@ -23,7 +23,7 @@
     "@types/gulp-typescript": "~0.0",
     "@types/vinyl-source-stream": "~0.0",
     "@types/watchify": "~3.7",
-    "browserify": "~13.3",
+    "browserify": "~14.0",
     "globby": "~6.1",
     "gulp": "~3.9",
     "gulp-crx-pack": "~1.0",
@@ -32,6 +32,6 @@
     "tsify": "~3.0",
     "typescript": "~2.1",
     "vinyl-source-stream": "~1.1",
-    "watchify": "~3.8"
+    "watchify": "~3.9"
   }
 }

@@ -53,7 +53,7 @@ function messageMain(m?) {
     let message: message = { from: "EQDComments" };
     if (m !== undefined) message.m = m
     console.log(message)
-    parent.window.postMessage(message, "http://www.equestriadaily.com")
+    parent.window.postMessage(message, "https://www.equestriadaily.com")
 }
 
 function getNumbers() {

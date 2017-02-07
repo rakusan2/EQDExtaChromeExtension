@@ -5,8 +5,10 @@ import * as fs from "fs"
 import * as browserify from "browserify"
 import * as tsify from "tsify"
 import * as source from "vinyl-source-stream"
+import * as buffer from "vinyl-buffer"
 import * as watchify from "watchify"
 import * as uglify from "gulp-uglify"
+import * as gutil from "gulp-util"
 
 const sassOptions: sass.Options = {
     outputStyle: 'expanded'
@@ -20,15 +22,18 @@ const sassOptions: sass.Options = {
 function combinejs(update: boolean, minify: boolean) {
 
     [['lib/backScript.ts', 'backScript.js'], ['lib/eqd-inject.ts', 'eqd-inject.js'], ['lib/eqdComment-inject.ts', 'eqdComment-inject.js']].forEach(f => {
-        let b = watchify(browserify({ entries: f[0] })),
+        let b = browserify({ entries: f[0]}),
             bundle = () => {
-                let pipe = b.bundle()
+                let pipe = b.bundle().on('error',gutil.log)
                     .pipe(source(f[1]))
-                if (minify) pipe.pipe(uglify())
+                if (minify) pipe = pipe.pipe(buffer()).pipe(uglify());
                 pipe.pipe(gulp.dest('build/files/lib'))
             }
         b.plugin(tsify)
-        if (update) b.on('update', bundle)
+        if (update){
+            b.plugin(watchify)
+            b.on('update', bundle)
+        }
         b.on('log', console.log)
         console.log(f[0])
         bundle()

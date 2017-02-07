@@ -6,8 +6,10 @@ var fs = require("fs");
 var browserify = require("browserify");
 var tsify = require("tsify");
 var source = require("vinyl-source-stream");
+var buffer = require("vinyl-buffer");
 var watchify = require("watchify");
 var uglify = require("gulp-uglify");
+var gutil = require("gulp-util");
 var sassOptions = {
     outputStyle: 'expanded'
 }, crxOptions = function () {
@@ -18,16 +20,18 @@ var sassOptions = {
 };
 function combinejs(update, minify) {
     [['lib/backScript.ts', 'backScript.js'], ['lib/eqd-inject.ts', 'eqd-inject.js'], ['lib/eqdComment-inject.ts', 'eqdComment-inject.js']].forEach(function (f) {
-        var b = watchify(browserify({ entries: f[0] })), bundle = function () {
-            var pipe = b.bundle()
+        var b = browserify({ entries: f[0] }), bundle = function () {
+            var pipe = b.bundle().on('error', gutil.log)
                 .pipe(source(f[1]));
             if (minify)
-                pipe.pipe(uglify());
+                pipe = pipe.pipe(buffer()).pipe(uglify());
             pipe.pipe(gulp.dest('build/files/lib'));
         };
         b.plugin(tsify);
-        if (update)
+        if (update) {
+            b.plugin(watchify);
             b.on('update', bundle);
+        }
         b.on('log', console.log);
         console.log(f[0]);
         bundle();

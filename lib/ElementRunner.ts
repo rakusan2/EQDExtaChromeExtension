@@ -15,46 +15,46 @@ export interface ElementMap {
     'P': HTMLParagraphElement,
     'B': Element
 }
-export class ElementTree {
-    elementTaskTree: ElementTask
+export class ElementTreeBuilder {
+    taskTree: ElementTask
     constructor(task?: ElementTask) {
-        if (task && 'nextElements' in task) this.elementTaskTree = task
-        else this.elementTaskTree = { nextElements: {}, final: true, stop: false }
+        if (task && 'nextElements' in task) this.taskTree = task
+        else this.taskTree = { nextElements: {}, final: true, stop: false }
     }
     add<K extends keyof ElementMap>(name: K, callback: (element?: ElementMap[K]) => any): this
     add(name: string, callback: (element?: Node) => any): this {
-        let branch = this.elementTaskTree
+        let branch = this.taskTree
         if (!(name in branch.nextElements)) branch.nextElements[name] = { nextElements: {}, final: true, stop: false }
         branch.nextElements[name].task = callback
         branch.final = false;
         return this
     }
-    addBranch<K extends keyof ElementMap>(name: K, additional: (a: ElementTree) => any, stopTree?: boolean, onFail?: (element?: ElementMap[K]) => any): this
-    addBranch(name: string, additional: (a: ElementTree) => any, stopTree?: boolean, onFail?: (element?: Node) => any) {
-        let branch: ElementTask = this.elementTaskTree.nextElements[name] = { nextElements: {}, final: true, stop: false };
-        if (this.elementTaskTree.stop) {
+    addBranch<K extends keyof ElementMap>(name: K, additional: (a: ElementTreeBuilder) => any, stopTree?: boolean, onFail?: (element?: ElementMap[K]) => any): this
+    addBranch(name: string, additional: (a: ElementTreeBuilder) => any, stopTree?: boolean, onFail?: (element?: Node) => any) {
+        let branch: ElementTask = this.taskTree.nextElements[name] = { nextElements: {}, final: true, stop: false };
+        if (this.taskTree.stop) {
             additional(this)
         } else {
-            additional(new ElementTree(branch))
+            additional(new ElementTreeBuilder(branch))
         }
         if (onFail !== undefined) branch.onFail = onFail
-        this.elementTaskTree.final = false
+        this.taskTree.final = false
         if (stopTree) branch.stop = true
         return this;
     }
 }
 
-export class ElementRunner extends ElementTree {
+export class ElementRunner extends ElementTreeBuilder {
     private toRun:(()=>any)[]=[]
     runCollection(elements: HTMLCollection) {
-        console.log({ tree: this.elementTaskTree, elements })
-        this.runTaskCollection(elements, this.elementTaskTree)
+        console.log({ tree: this.taskTree, elements })
+        this.runTaskCollection(elements, this.taskTree)
         while(this.toRun.length>0){
             this.toRun.pop()()
         }
     }
     run(element: Element) {
-        this.runTask(element, this.elementTaskTree)
+        this.runTask(element, this.taskTree)
     }
     private runTask(element: Node, tree: ElementTask) {
         if (element.nodeName in tree.nextElements) {

@@ -13,7 +13,8 @@ export interface ElementMap {
     "IMG": HTMLImageElement,
     'HR': HTMLHRElement,
     'P': HTMLParagraphElement,
-    'B': Element
+    'B': Element,
+    'HEAD':HTMLHeadElement
 }
 export class ElementTreeBuilder {
     taskTree: ElementTask

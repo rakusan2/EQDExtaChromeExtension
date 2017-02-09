@@ -37,7 +37,9 @@
         "default_popup":"popup.html"
     },
     "permissions":[
-        "tabs"
+        "tabs",
+        "webRequest",
+        "webRequestBlocking"
     ],
     "web_accessible_resources": [
         "images/loading.svg"

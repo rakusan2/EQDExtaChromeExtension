@@ -1,6 +1,7 @@
-import {ElementRunner} from './ElementRunner'
+import { ElementRunner } from './ElementRunner'
 import { ImageGroup, ImageLoader } from './toolbox'
 import { Popup } from './popup'
+import { RunningRunner } from './RunningRunner'
 let sorted: Element[],
     postContent: HTMLCollection,
     commentSection: HTMLDivElement,
@@ -18,73 +19,24 @@ let sorted: Element[],
     visibleCharacter = /[\w!"#$%&'()*+,.\/:;<=>?@\[\]^_`{|}~-]/g,
     images: ImageGroup[] = [],
     popup: Popup,
-    observerOptions: MutationObserverInit = { childList: true },
-    avoidCache = /^sizcache/,
-    observers:MutationObserver[] = [],
+    earlyRunner = new RunningRunner(),
     imgLoader = new ImageLoader(chrome.extension.getURL('images/loading.svg'))
 //loadingImageURL = chrome.extension.getURL('images/loading.svg')
 
-addEventListener('DOMContentLoaded',stopObservers)
-
-let obNum = 0;
-new MutationObserver((record, obs) => {
-    console.log({observer:obNum,record})
-    record.forEach(e => {
-        if (e.addedNodes.length>0 && e.addedNodes[0].nodeName === "BODY") {
-            console.log('found body')
-            console.log({body:document.body,div:document.body.children[0]})
-            showElements(document.body.children[0])
-            observe(e.addedNodes[0])
-        }
-    })
-}).observe(document.documentElement, observerOptions);
-
-function showElements(i:Object){
-    for(let name in i){
-        console.log({name,content:i[name]})
-    }
-}
-
-function observe(obNode: Node) {
-    console.log({observe:obNum})
-    obNum++
-    let obs = new MutationObserver((record, obs) => {
-        console.log({observer:obNum,obNode,record})
-        record.forEach(el => {
-            let n = el.addedNodes;
-            for (let i = 0; i < n.length; i++) {
-                console.log({found:n[i].nodeName})
-                if(n[i].nodeName === 'IMG')imgLoader.addImage(n[i] as HTMLImageElement)
-                else if (safeNode(n[i])) observe(n[i])
-            }
+earlyRunner.onElement('HEAD', () => console.log('found head'))
+    .onClass<'DIV'>('post-body', (el, tree) => {
+        console.log('found post-body')
+        tree.onElement('HR', () => {
+            console.log('found HR in post-body')
         })
-    })
-    obs.observe(obNode,observerOptions)
-    observers.push(obs)
-}
-let avoidNames = {
-    '#text': true,
-    IFRAME: true,
-    SCRIPT: true
-}, avoidId = {
-    header: true
-}
-function safeNode(el: Node) {
-    if (el.nodeName in avoidNames) {
-        return false
-    }
-    if (avoidCache.test((<Element>el).id) || ((<Element>el).id) in avoidId) {
-        return false
-    }
-    console.log({safe:el.nodeName})
-    return true
-}
+    }).run(document.documentElement)
+    //.secondTree(tree => {
+    //    tree.onElement('IMG', el => {
+    //        imgLoader.addImage(el)
+    //    })
+    //}).run(document.documentElement)
 
-function stopObservers(){
-    while(observers.length > 0){
-        observers.pop().disconnect()
-    }
-}
+addEventListener('DOMContentLoaded', () => earlyRunner.stop())
 
 console.log({ document, length: document.all.length })
 
@@ -92,7 +44,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     currentLabels = getLabels();
     sendResponse(currentLabels);
     //if (currentLabels.indexOf("Drawfriend") >= 0) prepare("Drawfriend");
-    stopObservers();
     relocateSettings();
 });
 

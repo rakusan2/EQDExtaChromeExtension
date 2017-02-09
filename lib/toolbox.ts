@@ -98,7 +98,7 @@ export class ImageLoader{
     }
     addImage(el:HTMLImageElement){
         console.log('Loading Image')
-        let src = el.src;
+        //let src = el.src;
         el.src = this.loadSrc
         //if(this.loadingNum < 5){
         //    

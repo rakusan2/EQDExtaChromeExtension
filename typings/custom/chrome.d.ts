@@ -123,7 +123,7 @@ declare namespace chrome{
         /** An object which allows the addition and removal of listeners for a Chrome event. */
         interface Event{
             /** Registers an event listener callback to an event. */
-            addListener(callback:()=>void):void
+            addListener(callback:()=>void,filter?:{url?:UrlFilter[]}):void
             /** Deregisters an event listener callback from an event. */
             removeListener(callback:()=>void):void
             hasListener(callabck:()=>void):boolean
@@ -798,7 +798,7 @@ declare namespace chrome{
             /** An ArrayBuffer with a copy of the data. */
             bytes?:any,
             /** A string with the file's path and name. */
-            gile?:string
+            file?:string
         }
         /** The maximum number of times that handlerBehaviorChanged can be called per 10 minute sustained interval. handlerBehaviorChanged is an expensive function call that shouldn't be called often. */
         var MAX_HANDLER_BEHAVIOR_CHANGED_CALLS_PER_10_MINUTES:number
@@ -836,7 +836,8 @@ declare namespace chrome{
         }
         /** Fired when a request is about to occur. */
         interface onBeforeRequest extends events.Event{
-            addListener(callback:(details:beforeRequest)=>any)
+            addListener(callback:(details:beforeRequest)=>BlockingResponse,filter:RequestFilter,options?:['blocking'])
+            addListener(callback:(details:beforeRequest)=>any,filter:RequestFilter,options?:OnBeforeRequestOptions[])
         }
         var onBeforeRequest:onBeforeRequest
         interface sendHeaders extends requestDetails{
@@ -844,12 +845,12 @@ declare namespace chrome{
         }
         /** Fired before sending an HTTP request, once the request headers are available. This may occur after a TCP connection is made to the server, but before any HTTP data is sent. */
         interface onBeforeSendHeaders extends events.Event{
-            addListener(callback:(details:sendHeaders)=>any)
+            addListener(callback:(details:sendHeaders)=>any,filter:RequestFilter,options?:OnBeforeSendHeadersOptions[])
         }
         var onBeforeSendHeaders:onBeforeSendHeaders
         /** Fired just before a request is going to be sent to the server (modifications of previous onBeforeSendHeaders callbacks are visible by the time onSendHeaders is fired). */
         interface onSendHeaders extends events.Event{
-            addListener(callback:(details:sendHeaders)=>any)
+            addListener(callback:(details:sendHeaders)=>any,filter:RequestFilter,options?:OnSendHeadersOptions[])
         }
         var onSendHeaders:onSendHeaders
         interface headersRecieved extends requestDetails{
@@ -862,7 +863,8 @@ declare namespace chrome{
         }
         /** Fired when HTTP response headers of a request have been received. */
         interface onHeadersReceived extends events.Event{
-            addListener(callback:(details:headersRecieved)=>any)
+            addListener(callback:(details:headersRecieved)=>BlockingResponse,filter:RequestFilter,options?:['blocking'])
+            addListener(callback:(details:headersRecieved)=>any,filter:RequestFilter,options?:OnHeadersReceivedOptions[])
         }
         var onHeadersReceived:onHeadersReceived
         interface authRequired extends headersRecieved{
@@ -877,7 +879,7 @@ declare namespace chrome{
         }
         /** Fired when an authentication failure is received. The listener has three options: it can provide authentication credentials, it can cancel the request and display the error page, or it can take no action on the challenge. If bad user credentials are provided, this may be called multiple times for the same request. */
         interface onAuthRequired extends events.Event{
-            addListener(callback:(details:authRequired,callback?:(response:BlockingResponse)=>any)=>any)
+            addListener(callback:(details:authRequired,callback?:(response:BlockingResponse)=>any)=>any,filter:RequestFilter,options?:OnAuthRequiredOptions[])
         }
         var onAuthRequired:onAuthRequired
         interface responseStarted extends headersRecieved{
@@ -888,7 +890,7 @@ declare namespace chrome{
         }
         /** Fired when the first byte of the response body is received. For HTTP requests, this means that the status line and response headers are available. */
         interface onResponseStarted extends events.Event{
-            addListener(callback:(details:responseStarted)=>any)
+            addListener(callback:(details:responseStarted)=>any,filter:RequestFilter,options?:OnResponseStartedOptions[])
         }
         var onResponseStarted:onResponseStarted
         interface beforeRedirect extends responseStarted{
@@ -897,12 +899,12 @@ declare namespace chrome{
         }
         /** Fired when a server-initiated redirect is about to occur. */
         interface onBeforeRedirect extends events.Event{
-            addListener(callback:(details:beforeRedirect)=>any)
+            addListener(callback:(details:beforeRedirect)=>any,filter:RequestFilter,options?:OnBeforeRedirectOptions[])
         }
         var onBeforeRedirect:onBeforeRedirect
         /** Fired when a request is completed. */
         interface onCompleted extends events.Event{
-            addListener(callback:(details:responseStarted)=>any)
+            addListener(callback:(details:responseStarted)=>any,filter:RequestFilter,options?:OnCompletedOptions[])
         }
         var onCompleted:onCompleted
         interface errorOccured extends requestDetails{
@@ -914,7 +916,7 @@ declare namespace chrome{
             error:string
         }
         interface onErrorOccurred extends events.Event{
-            addListener(callback:(details:errorOccured)=>any)
+            addListener(callback:(details:errorOccured)=>any,filter:RequestFilter)
         }
         var onErrorOccurred:onErrorOccurred
     }

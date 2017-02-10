@@ -43,7 +43,7 @@ function combinejs(update: boolean, minify: boolean) {
 gulp.add('js', () => combinejs(false, true))
 
 gulp.add('css', () => {
-    gulp.src('lib/*.scss')
+    gulp.src('src/*.scss')
         .pipe(sass(sassOptions))
         .pipe(gulp.dest('build/files/src'))
 })

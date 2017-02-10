@@ -1,7 +1,8 @@
-import { ElementRunner } from './ElementRunner'
-import { ImageGroup, ImageLoader } from './toolbox'
-import { Popup } from './popup'
-import { RunningRunner } from './RunningRunner'
+import { ElementRunner } from './lib/ElementRunner'
+import { ImageGroup} from './lib/toolbox'
+import { Popup } from './lib/popup'
+import { RunningRunner } from './lib/RunningRunner'
+import { ImageLoader } from './lib/ImgLoader'
 let sorted: Element[],
     postContent: HTMLCollection,
     commentSection: HTMLDivElement,

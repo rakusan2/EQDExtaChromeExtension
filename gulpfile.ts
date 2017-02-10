@@ -21,13 +21,13 @@ const sassOptions: sass.Options = {
 
 function combinejs(update: boolean, minify: boolean) {
 
-    [['lib/backScript.ts', 'backScript.js'], ['lib/eqd-inject.ts', 'eqd-inject.js'], ['lib/eqdComment-inject.ts', 'eqdComment-inject.js']].forEach(f => {
+    [['src/backScript.ts', 'backScript.js'], ['src/eqd-inject.ts', 'eqd-inject.js'], ['src/eqdComment-inject.ts', 'eqdComment-inject.js']].forEach(f => {
         let b = browserify({ entries: f[0]}),
             bundle = () => {
                 let pipe = b.bundle().on('error',gutil.log)
                     .pipe(source(f[1]))
                 if (minify) pipe = pipe.pipe(buffer()).pipe(uglify());
-                pipe.pipe(gulp.dest('build/files/lib'))
+                pipe.pipe(gulp.dest('build/files/src'))
             }
         b.plugin(tsify)
         if (update){
@@ -45,7 +45,7 @@ gulp.add('js', () => combinejs(false, true))
 gulp.add('css', () => {
     gulp.src('lib/*.scss')
         .pipe(sass(sassOptions))
-        .pipe(gulp.dest('build/files/lib'))
+        .pipe(gulp.dest('build/files/src'))
 })
 gulp.add('copyFiles', () => {
     gulp.src(['manifest.json', 'popup.html', 'images/*'], { base: '.' })
@@ -56,7 +56,7 @@ gulp.add("default", ['js', 'css'])
 
 gulp.add("watch", ['copyFiles', 'css'], () => {
     combinejs(true, false);
-    gulp.watch('lib/*.scss', ['css'])
+    gulp.watch('src/*.scss', ['css'])
 })
 
 gulp.add("build", ['copyFiles', 'js', 'css'])

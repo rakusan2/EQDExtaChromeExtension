@@ -5,19 +5,19 @@
     "manifest_version":2,
     "description":"Extra features for the Equestria Daily site",
     "background":{
-        "scripts":["lib/backScript.js"]
+        "scripts":["src/backScript.js"]
     },
     "content_scripts":[
         {
             "matches":["*://www.equestriadaily.com/*/**"],
-            "js":["lib/eqd-inject.js"],
-            "css":["lib/eqd.css"],
+            "js":["src/eqd-inject.js"],
+            "css":["src/eqd.css"],
             "run_at": "document_start"
         },
         {
             "matches": ["https://disqus.com/embed/comments/*"],
-            "js": ["lib/eqdComment-inject.js"],
-            "css": ["lib/comments.css"],
+            "js": ["src/eqdComment-inject.js"],
+            "css": ["src/comments.css"],
             "run_at": "document_end",
             "all_frames": true
         }

@@ -98,9 +98,11 @@ declare namespace chrome{
 
     }
     export namespace enterprise{
+        /** Use the chrome.enterprise.deviceAttributes API to read device attributes. */
         namespace deviceAttributes{
             
         }
+        /** Use the chrome.enterprise.platformKeys API to generate hardware-backed keys and to install certificates for these keys. The certificates will be managed by the platform and can be used for TLS authentication, network access or by other extension through chrome.platformKeys. */
         namespace platformKeys{
             
         }
@@ -245,6 +247,7 @@ declare namespace chrome{
     export namespace omnibox{
 
     }
+    /** Use the chrome.pageAction API to put icons in the main Google Chrome toolbar, to the right of the address bar. Page actions represent actions that can be taken on the current page, but that aren't applicable to all pages. Page actions appear grayed out when inactive. */
     export namespace pageAction{
         interface ImageDataType{
 
@@ -447,15 +450,46 @@ declare namespace chrome{
 
     }
     export namespace storage{
-
+        interface StorageChange{
+            /** The old value of the item, if there was an old value. */
+            oldValue?:any,
+            /** The new value of the item, if there is a new value. */
+            newValue?:any
+        }
+        interface StorageArea{
+            /** Gets one or more items from storage. */
+            get(keys:string|string[]|Object|null,callback:(items:Object)=>any),
+            /** Gets the amount of space (in bytes) being used by one or more items. */
+            getBytesInUse(keys:string|string[],callback:(bytesInUse:number)=>any),
+            /** Sets multiple items. */
+            set(items:any,callback?:()=>any),
+            /** Removes one or more items from storage. */
+            remove(keys:string|string[],callback?:()=>any),
+            /** Removes all items from storage. */
+            clear(callback?:()=>any)
+        }
+        /** Items in the sync storage area are synced using Chrome Sync. */
+        var sync:StorageArea;
+        /** Items in the local storage area are local to each machine. */
+        var local:StorageArea;
+        /** Items in the managed storage area are set by the domain administrator, and are read-only for the extension; trying to modify this namespace results in an error. */
+        var managed:StorageArea;
+        /** Fired when one or more items change. */
+        interface onChanged extends events.Event{
+            addListener(callback:(changes:Object,areaName:'sync'|'local'|'managed')=>any)
+        }
+        var onChanged:onChanged
     }
     export namespace system{
+        /** Use the system.cpu API to query CPU metadata.  */
         namespace cpu{
 
         }
+        /** The chrome.system.memory API. */
         namespace memory{
 
         }
+        /** Use the chrome.system.storage API to query storage device information and be notified when a removable storage device is attached and detached. */
         namespace storage{
 
         }
@@ -463,6 +497,7 @@ declare namespace chrome{
     export namespace tabCapture{
 
     }
+    /** Use the chrome.tabs API to interact with the browser's tab system. You can use this API to create, modify, and rearrange tabs in the browser. */
     export namespace tabs{
         /** An event that caused a muted state change. */
         type MutedInfoReason =
@@ -762,6 +797,7 @@ declare namespace chrome{
     export namespace webNavigation{
 
     }
+    /** Use the chrome.webRequest API to observe and analyze traffic and to intercept, block, or modify requests in-flight. */
     export namespace webRequest{
         type ResourceType="main_frame"| "sub_frame"| "stylesheet"| "script"| "image"| "font"| "object"| "xmlhttprequest"| "ping"| "other"
         type OnBeforeRequestOptions="blocking"| "requestBody"

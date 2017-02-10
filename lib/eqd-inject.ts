@@ -19,8 +19,8 @@ let sorted: Element[],
     visibleCharacter = /[\w!"#$%&'()*+,.\/:;<=>?@\[\]^_`{|}~-]/g,
     images: ImageGroup[] = [],
     popup: Popup,
-    earlyRunner = new RunningRunner(),
-    imgLoader = new ImageLoader(chrome.extension.getURL('images/loading.svg'))
+    earlyRunner = new RunningRunner()//,
+    //imgLoader = new ImageLoader(chrome.extension.getURL('images/loading.svg'))
 //loadingImageURL = chrome.extension.getURL('images/loading.svg')
 
 earlyRunner.onElement('HEAD', () => console.log('found head'))
@@ -29,12 +29,13 @@ earlyRunner.onElement('HEAD', () => console.log('found head'))
         tree.onElement('HR', () => {
             console.log('found HR in post-body')
         })
+    })
+    .secondTree(tree => {
+        tree.onElement('IMG', el => {
+            console.log('found an image')
+            //imgLoader.addImage(el)
+        })
     }).run(document.documentElement)
-    //.secondTree(tree => {
-    //    tree.onElement('IMG', el => {
-    //        imgLoader.addImage(el)
-    //    })
-    //}).run(document.documentElement)
 
 addEventListener('DOMContentLoaded', () => earlyRunner.stop())
 

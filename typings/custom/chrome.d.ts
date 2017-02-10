@@ -125,8 +125,8 @@ declare namespace chrome{
             /** Registers an event listener callback to an event. */
             addListener(callback:()=>void,filter?:{url?:UrlFilter[]}):void
             /** Deregisters an event listener callback from an event. */
-            removeListener(callback:()=>void):void
-            hasListener(callabck:()=>void):boolean
+            removeListener(callback:(a?:any)=>void):void
+            hasListener(callabck:(a?:any)=>void):boolean
             hasListeners():boolean
             /** Registers rules to handle events. */
             addRules(rules:Rule[],callback?:(rules?:Rule[])=>void):void
@@ -836,7 +836,7 @@ declare namespace chrome{
         }
         /** Fired when a request is about to occur. */
         interface onBeforeRequest extends events.Event{
-            addListener(callback:(details:beforeRequest)=>BlockingResponse,filter:RequestFilter,options?:['blocking'])
+            addListener(callback:(details:beforeRequest)=>BlockingResponse,filter:RequestFilter,options:['blocking'])
             addListener(callback:(details:beforeRequest)=>any,filter:RequestFilter,options?:OnBeforeRequestOptions[])
         }
         var onBeforeRequest:onBeforeRequest

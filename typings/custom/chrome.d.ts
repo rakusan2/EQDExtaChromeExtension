@@ -5,12 +5,10 @@ declare namespace chrome {
     export namespace alarms {
 
     }
-    export namespace alarms {
-
-    }
     export namespace bookmarks {
 
     }
+    /** Use browser actions to put icons in the main Google Chrome toolbar, to the right of the address bar. In addition to its icon, a browser action can also have a tooltip, a badge, and a popup. */
     export namespace browserAction {
         type ColorArray = number[]
         type ImageDataType = ImageData;
@@ -285,6 +283,7 @@ declare namespace chrome {
 
     }
     export namespace input {
+        /** Use the chrome.input.ime API to implement a custom IME for Chrome OS. This allows your extension to handle keystrokes, set the composition, and manage the candidate window. */
         namespace ime {
             type KeyboardEventType = 'keyup' | 'keydown'
             /** See http://www.w3.org/TR/DOM-Level-3-Events/#events-KeyboardEvent */
@@ -573,8 +572,32 @@ declare namespace chrome {
     export namespace pageCapture {
 
     }
+    /** Use the chrome.permissions API to request declared optional permissions at run time rather than install time, so users understand why the permissions are needed and grant only those that are necessary.  */
     export namespace permissions {
-
+        interface Permissions {
+            /** List of named permissions (does not include hosts or origins). Anything listed here must appear in the optional_permissions list in the manifest. */
+            permissions?: string[],
+            /** List of origin permissions. Anything listed here must be a subset of a host that appears in the optional_permissions list in the manifest. For example, if http://*.example.com/ or http://* / appears in optional_permissions, you can request an origin of http://help.example.com/. Any path is ignored. */
+            origins?: string[]
+        }
+        /** Gets the extension's current set of permissions. */
+        function getAll(callback: (permissions: Permissions) => any)
+        /** Checks if the extension has the specified permissions. */
+        function contains(callback: (result: boolean) => any)
+        /** Requests access to the specified permissions. These permissions must be defined in the optional_permissions field of the manifest. If there are any problems requesting the permissions, runtime.lastError will be set. */
+        function request(permissions: Permissions, callback?: (granted: boolean) => any)
+        /** Removes access to the specified permissions. If there are any problems removing the permissions, runtime.lastError will be set. */
+        function remove(permissions: Permissions, callback?: (removed: boolean) => any)
+        /** Fired when the extension acquires new permissions. */
+        interface onAdded extends events.Event {
+            addListener(callback: (permissions: Permissions) => any)
+        }
+        var onAdded: onAdded
+        /** Fired when access to permissions has been removed from the extension. */
+        interface onRemoved extends events.Event {
+            addListener(callback: (permissions: Permissions) => any)
+        }
+        var onRemoved: onRemoved
     }
     export namespace platformKeys {
 
@@ -747,6 +770,7 @@ declare namespace chrome {
     export namespace sessions {
 
     }
+    /** Use the chrome.storage API to store, retrieve, and track changes to user data. */
     export namespace storage {
         interface StorageChange {
             /** The old value of the item, if there was an old value. */
@@ -781,15 +805,68 @@ declare namespace chrome {
     export namespace system {
         /** Use the system.cpu API to query CPU metadata.  */
         namespace cpu {
-
+            /** Queries basic CPU information of the system. */
+            function getInfo(callback: (info: {
+                /** The number of logical processors. */
+                numOfProcessors: number,
+                /** The architecture name of the processors. */
+                archName: string,
+                /** The model name of the processors. */
+                modelName: string,
+                /** A set of feature codes indicating some of the processor's capabilities. The currently supported codes are "mmx", "sse", "sse2", "sse3", "ssse3", "sse4_1", "sse4_2", and "avx". */
+                features: string[],
+                /** Information about each logical processor. */
+                processors: {
+                    /** Cumulative usage info for this logical processor. */
+                    usage: {
+                        /** The cumulative time used by userspace programs on this processor. */
+                        user: number,
+                        /** The cumulative time used by kernel programs on this processor. */
+                        kernel: number,
+                        /** The cumulative time spent idle by this processor. */
+                        idle: number,
+                        /** The total cumulative time for this processor. This value is equal to user + kernel + idle. */
+                        total: number
+                    }
+                }[]
+            }) => any)
         }
         /** The chrome.system.memory API. */
         namespace memory {
-
+            /** Get physical memory information. */
+            function getInfo(callback: (info: {
+                /** The total amount of physical memory capacity, in bytes. */
+                capacity: number,
+                /** The amount of available capacity, in bytes. */
+                availableCapacity: number
+            }) => any)
         }
         /** Use the chrome.system.storage API to query storage device information and be notified when a removable storage device is attached and detached. */
         namespace storage {
-
+            interface StorageUnitInfo {
+                /** The transient ID that uniquely identifies the storage device. This ID will be persistent within the same run of a single application. It will not be a persistent identifier between different runs of an application, or between different applications. */
+                id: string,
+                /** The name of the storage unit. */
+                name: string,
+                /** The media type of the storage unit. */
+                type: "fixed" | "removable" | "unknown",
+                /** The total amount of the storage space, in bytes. */
+                capacity: number
+            }
+            /** Get the storage information from the system. The argument passed to the callback is an array of StorageUnitInfo objects. */
+            function getInfo(callback: (info: StorageUnitInfo[]) => any)
+            /** Ejects a removable storage device. */
+            function ejectDevice(id: string, callback: (result: "success" | "in_use" | "no_such_device" | "failure") => any)
+            /** Fired when a new removable storage is attached to the system. */
+            interface onAttached extends events.Event {
+                addListener(callback: (info: StorageUnitInfo) => any)
+            }
+            var onAttached: onAttached
+            /** Fired when a removable storage is detached from the system. */
+            interface onDetached extends events.Event {
+                addListener(callback: (id: string) => any)
+            }
+            var onDetached: onDetached
         }
     }
     export namespace tabCapture {
@@ -1257,6 +1334,7 @@ declare namespace chrome {
     export namespace webstore {
 
     }
+    /** Use the chrome.windows API to interact with browser windows. You can use this API to create, modify, and rearrange windows in the browser. */
     export namespace windows {
         /** The type of browser window this is. Under some circumstances a Window may not be assigned type property, for example when querying closed windows from the sessions API. */
         type WindowType = "normal" | "popup" | "panel" | "app" | "devtools"
@@ -1334,5 +1412,20 @@ declare namespace chrome {
         function update(windowId: number, updateInfo: updateInfo, callback?: (window: Window) => any)
         /** Removes (closes) a window, and all the tabs inside it. */
         function remove(windowId: number, callback?: () => any)
+        /** Fired when a window is created. */
+        interface onCreated extends events.Event {
+            addListener(callback: (window: Window) => any, filter: WindowType[])
+        }
+        var onCreated: onCreated
+        /** Fired when a window is removed (closed). */
+        interface onRemoved extends events.Event {
+            addListener(callback: (windowId: number) => any, filter: WindowType[])
+        }
+        var onRemoved: onRemoved
+        /** Fired when the currently focused window changes. Will be chrome.windows.WINDOW_ID_NONE if all chrome windows have lost focus. Note: On some Linux window managers, WINDOW_ID_NONE will always be sent immediately preceding a switch from one chrome window to another. */
+        interface onFocusChanged extends events.Event {
+            addListener(callback: (windowId: number) => any, filter: WindowType[])
+        }
+        var onFocusChanged: onFocusChanged
     }
 }

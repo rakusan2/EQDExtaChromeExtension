@@ -881,7 +881,7 @@ declare namespace chrome {
             "app" |
             "devtools"
         /** An ID which represents the absence of a browser tab. */
-        var TAB_ID_NONE: number
+        const TAB_ID_NONE = -1
         /** Retrieves details about the specified tab. */
         function get(tabId: number, callback: (tab: Tab) => void): void
         /** Gets the tab that this script call is being made from. May be undefined if called from a non-tab context (for example: a background page or popup view). */
@@ -1135,7 +1135,7 @@ declare namespace chrome {
             file?: string
         }
         /** The maximum number of times that handlerBehaviorChanged can be called per 10 minute sustained interval. handlerBehaviorChanged is an expensive function call that shouldn't be called often. */
-        var MAX_HANDLER_BEHAVIOR_CHANGED_CALLS_PER_10_MINUTES: number
+        const MAX_HANDLER_BEHAVIOR_CHANGED_CALLS_PER_10_MINUTES = 20
         /** Needs to be called when the behavior of the webRequest handlers has changed to prevent incorrect handling due to caching. This function call is expensive. Don't call it often. */
         function handlerBehaviorChanged(callback?: () => any)
         interface requestDetails {
@@ -1258,8 +1258,81 @@ declare namespace chrome {
 
     }
     export namespace windows {
-        interface Window {
-
+        /** The type of browser window this is. Under some circumstances a Window may not be assigned type property, for example when querying closed windows from the sessions API. */
+        type WindowType = "normal" | "popup" | "panel" | "app" | "devtools"
+        /** The state of this browser window. Under some circumstances a Window may not be assigned state property, for example when querying closed windows from the sessions API. */
+        type WindowState = "normal" | "minimized" | "maximized" | "fullscreen" | "docked"
+        interface location {
+            /** Whether the window is currently the focused window. */
+            focused: boolean,
+            /** The offset of the window from the top edge of the screen in pixels. Under some circumstances a Window may not be assigned top property, for example when querying closed windows from the sessions API. */
+            top?: number,
+            /** The offset of the window from the left edge of the screen in pixels. Under some circumstances a Window may not be assigned left property, for example when querying closed windows from the sessions API. */
+            left?: number,
+            /** The width of the window, including the frame, in pixels. Under some circumstances a Window may not be assigned width property, for example when querying closed windows from the sessions API. */
+            width?: number,
+            /** The height of the window, including the frame, in pixels. Under some circumstances a Window may not be assigned height property, for example when querying closed windows from the sessions API. */
+            height?: number,
         }
+        interface Window extends location {
+            /** The ID of the window. Window IDs are unique within a browser session. Under some circumstances a Window may not be assigned an ID, for example when querying windows using the sessions API, in which case a session ID may be present. */
+            id?: number,
+            /** Array of tabs.Tab objects representing the current tabs in the window. */
+            tabs?: tabs.Tab[],
+            /** Whether the window is incognito. */
+            incognito: boolean,
+            /** The type of browser window this is. */
+            type?: WindowType
+            /** The state of this browser window. */
+            state?: WindowState,
+            /** Whether the window is set to be always on top. */
+            alwaysOnTop: boolean,
+            /** The session ID used to uniquely identify a Window obtained from the sessions API. */
+            sessionId?: string
+        }
+        interface getInfo {
+            /** If true, the windows.Window object will have a tabs property that contains a list of the tabs.Tab objects. The Tab objects only contain the url, title and favIconUrl properties if the extension's manifest file includes the "tabs" permission. */
+            populate: boolean,
+            /** If set, the windows.Window returned will be filtered based on its type. If unset the default filter is set to ['app', 'normal', 'panel', 'popup'], with 'app' and 'panel' window types limited to the extension's own windows. */
+            windowTypes: WindowType[]
+        }
+        interface createData extends location {
+            /** A URL or array of URLs to open as tabs in the window. Fully-qualified URLs must include a scheme (i.e. 'http://www.google.com', not 'www.google.com'). Relative URLs will be relative to the current page within the extension. Defaults to the New Tab Page. */
+            url?: string | string[],
+            /** The id of the tab for which you want to adopt to the new window. */
+            tabId?: number,
+            /** Whether the new window should be an incognito window. */
+            incognito?: boolean,
+            /** Specifies what type of browser window to create. */
+            type?: CreateType,
+            /** The initial state of the window. The 'minimized', 'maximized' and 'fullscreen' states cannot be combined with 'left', 'top', 'width' or 'height'. */
+            state?: WindowState
+        }
+        interface updateInfo extends location {
+            /** If true, causes the window to be displayed in a manner that draws the user's attention to the window, without changing the focused window. The effect lasts until the user changes focus to the window. This option has no effect if the window already has focus. Set to false to cancel a previous draw attention request. */
+            drawAttention: boolean,
+            /** The new state of the window. The 'minimized', 'maximized' and 'fullscreen' states cannot be combined with 'left', 'top', 'width' or 'height'. */
+            state?: WindowState
+        }
+        /** Specifies what type of browser window to create. 'panel' is deprecated and only available to existing whitelisted extensions on Chrome OS. */
+        type CreateType = "normal" | "popup" | "panel"
+        /** The windowId value that represents the absence of a chrome browser window. */
+        const WINDOW_ID_NONE = -1
+        /** The windowId value that represents the current window. */
+        const WINDOW_ID_CURRENT = -2
+        /** Gets details about a window. */
+        function get(windowId: number, getInfo: getInfo, callback: (window: Window) => any)
+        /** Gets the current window. */
+        function getCurrent(getInfo: getInfo, callback: (window: Window) => any)
+        /** Gets the window that was most recently focused — typically the window 'on top'. */
+        function getLastFocused(getInfo: getInfo, callback: (window: Window) => any)
+        /** Gets all windows. */
+        function getAll(getInfo: getInfo, callback: (window: Window[]) => any)
+        /** Creates (opens) a new browser with any optional sizing, position or default URL provided. */
+        function create(createData: createData, callback?: (window: Window) => any)
+        /** Updates the properties of a window. Specify only the properties that you want to change; unspecified properties will be left unchanged. */
+        function update(windowId: number, updateInfo: updateInfo, callback?: (window: Window) => any)
+        /** Removes (closes) a window, and all the tabs inside it. */
+        function remove(windowId: number, callback?: () => any)
     }
 }

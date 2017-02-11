@@ -2,7 +2,6 @@
   "name": "EQDExtaChromeExtension",
   "dependencies": {},
   "globalDependencies": {
-    "chrome": "file:./typings/custom/chrome.d.ts",
     "gulp-crx-pack": "file:./typings/custom/gulp-crx-pack.d.ts",
     "gulp-sass": "file:./typings/custom/gulp-sass.d.ts"
   }

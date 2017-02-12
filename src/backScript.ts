@@ -1,17 +1,45 @@
-function updateURL(tabID:number){
-    chrome.tabs.sendMessage(tabID,{},labels=>{
-        console.log({tabID,labels})
-        if(Array.isArray(labels) && labels.length>0){
+import * as imgLoader from './lib/BackImgLoader'
+let eqdUrl = /https?:\/\/www.equestriadaily.com/
+
+function updateURL(tabID: number) {
+    chrome.tabs.sendMessage(tabID, {}, labels => {
+        console.log({ tabID, labels })
+        if (Array.isArray(labels) && labels.length > 0) {
             chrome.pageAction.show(tabID)
         }
-        else{
+        else {
             chrome.pageAction.hide(tabID)
         }
     })
 }
-chrome.tabs.onUpdated.addListener((tabID,change,tab)=>{
-    if(change.status == "complete")updateURL(tabID);
-});
-chrome.tabs.query({active:true,currentWindow:true} as chrome.tabs.queryInfo,tabs=>{
-    updateURL(tabs[0].id);
+
+chrome.runtime.onMessage.addListener((message,sender,response)=>{
+        if("url" in message){
+            imgLoader.allowedURL(message.url)
+            response("added")
+        }
+})
+
+chrome.tabs.onUpdated.addListener((tabID, change, tab) => {
+    let isEQD = eqdUrl.test(tab.url)
+
+    if (isEQD && !imgLoader.tabIsTracked(tabID)) {
+        imgLoader.trackTab(tabID)
+        updateURL(tabID)
+        imgLoader.start()
+    }
+    else if ((!isEQD || change.status === "complete") && imgLoader.tabIsTracked(tabID)) {
+        imgLoader.unTrackTab(tabID)
+        chrome.pageAction.hide(tabID)
+    }
+})
+chrome.tabs.onRemoved.addListener(tabID=>{
+    imgLoader.unTrackTab(tabID)
+})
+
+chrome.tabs.query({ url: '*://www.equestriadaily.com/*/**' }, tabs => {
+    tabs.forEach(tab => {
+        updateURL(tab.id)
+    })
+    if (tabs.length > 0) imgLoader.start()
 })

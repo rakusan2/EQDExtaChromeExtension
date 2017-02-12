@@ -1,5 +1,5 @@
 import { ElementRunner } from './lib/ElementRunner'
-import { ImageGroup} from './lib/toolbox'
+import { ImageGroup } from './lib/toolbox'
 import { Popup } from './lib/popup'
 import { RunningRunner } from './lib/RunningRunner'
 import { ImageLoader } from './lib/ImgLoader'
@@ -20,8 +20,10 @@ let sorted: Element[],
     visibleCharacter = /[\w!"#$%&'()*+,.\/:;<=>?@\[\]^_`{|}~-]/g,
     images: ImageGroup[] = [],
     popup: Popup,
-    earlyRunner = new RunningRunner()//,
-    //imgLoader = new ImageLoader(chrome.extension.getURL('images/loading.svg'))
+    earlyRunner = new RunningRunner(),
+    imgLoader = new ImageLoader(chrome.extension.getURL('images/loading.svg'),(url,res)=>{
+        chrome.runtime.sendMessage({url},res)
+    })
 //loadingImageURL = chrome.extension.getURL('images/loading.svg')
 
 earlyRunner.onElement('HEAD', () => console.log('found head'))
@@ -34,7 +36,7 @@ earlyRunner.onElement('HEAD', () => console.log('found head'))
     .secondTree(tree => {
         tree.onElement('IMG', el => {
             console.log('found an image')
-            //imgLoader.addImage(el)
+            imgLoader.addImage(el)
         })
     }).run(document.documentElement)
 

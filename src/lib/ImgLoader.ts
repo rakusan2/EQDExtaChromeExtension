@@ -1,4 +1,3 @@
-type BlockResp = chrome.webRequest.BlockingResponse;
 interface imgContainer {
     tag: HTMLImageElement
     src: string
@@ -6,78 +5,60 @@ interface imgContainer {
 export class ImageLoader {
     private img: imgContainer[]
     private imgL: imgContainer[]
-    private imgNum: number
-    private imgLNum: number
-    private loadingNum: number
+    private loadingL: number
+    private loadingH: number
     private loadSrc: string
-    private allowedURLs: string[]
-    private gate = (details: chrome.webRequest.WebRequestBodyDetails): BlockResp => {
-        if (this.imgLNum + (2 * this.imgNum) < 20 || this.allowedURLs.indexOf(details.url) >= 0) return
-        return { cancel: true }
-    }
-    constructor(loadSrc: string) {
+    private allowLoad: (src: string, done?: () => any) => any
+    constructor(loadSrc: string, allowLoad: (src: string, done?: () => any) => any) {
         this.img = []
         this.imgL = []
-        this.allowedURLs = []
+        this.loadingH = this.loadingL = 0
         this.loadSrc = loadSrc
-        this.loadingNum = this.imgNum = this.imgLNum = 0
-        this.startGate()
+        this.allowLoad = allowLoad
     }
     addImage(el: HTMLImageElement, lowPriority?: boolean) {
-        console.log('Loading Image')
-        if (lowPriority) {
-            this.imgLNum++
-            if (this.imgLNum > 20) {
-                this.imgL.push({
-                    tag: el,
-                    src: el.src
-                })
-            }
-            else {
-                this.allowedURLs.push(el.src)
-            }
-        } else {
-            this.imgNum++
-            if (this.imgNum > 10) {
-                this.img.push({
-                    tag: el,
-                    src: el.src
-                })
-            }
-            else {
-                this.allowedURLs.push(el.src)
-            }
-        }
-        el.src = this.loadSrc
         if (el.complete) {
-            if (lowPriority) this.imgLNum--
-            else this.imgNum--
-            this.loadNext()
+            this.allowLoad(el.src)
+            return
         }
-        else el.onload = () => {
-            if (lowPriority) this.imgLNum--
-            else this.imgNum--
-            this.loadNext()
+        console.log('Loading Image')
+        let container: imgContainer = { tag: el, src: el.src }
+        if (lowPriority) {
+            if (this.loadingL < 20) {
+                this.loadingL++
+                this.load({ tag: el, src: el.src },true)
+            } else {
+                el.src = this.loadSrc
+                this.imgL.push(container)
+            }
+        }else{
+            if (this.loadingH < 20) {
+                this.loadingH++
+                this.load({ tag: el, src: el.src },false)
+            } else {
+                el.src = this.loadSrc
+                this.img.push(container)
+            }
         }
+    }
+    private load(el: imgContainer, low: boolean) {
+        this.allowLoad(el.src, () => {
+            el.tag.src = el.src
+            el.tag.onload = ev => {
+                if (low) this.loadingL--
+                else this.loadingH--
+                this.loadNext()
+            }
+            console.log({ loading: el.src })
+        })
     }
     private loadNext() {
-        let imageToLoad: imgContainer
+        if (this.loadingL + (2 * this.loadingH) > 20) return
         if (this.imgL.length > 0) {
-            imageToLoad = this.imgL.shift()
+            this.load(this.imgL.shift(),true)
         } else if (this.img.length > 0) {
-            imageToLoad = this.img.shift()
+            this.load(this.img.shift(),false)
         }
-        this.allowedURLs.push(imageToLoad.src)
-        imageToLoad.tag.src = imageToLoad.src
-    }
-    private startGate() {
-        chrome.webRequest.onBeforeRequest.addListener(this.gate,
-            {
-                urls: ['<all_urls>'],
-                types: ['image'],
-            }, ['blocking'])
-    }
-    stopGate() {
-        chrome.webRequest.onBeforeRequest.removeListener(this.gate)
+
     }
 }

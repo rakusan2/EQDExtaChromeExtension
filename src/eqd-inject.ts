@@ -34,9 +34,14 @@ earlyRunner.onElement('HEAD', () => console.log('found head'))
         })
     })
     .secondTree(tree => {
+        tree.onClass<"DIV">('post-body', (el, tree) => {
+            tree.onElement('IMG', el => {
+                imgLoader.addImage(el, false)
+            })
+        })
         tree.onElement('IMG', el => {
             console.log('found an image')
-            imgLoader.addImage(el)
+            imgLoader.addImage(el, true)
         })
     }).run(document.documentElement)
 

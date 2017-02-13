@@ -21,8 +21,8 @@ let sorted: Element[],
     images: ImageGroup[] = [],
     popup: Popup,
     earlyRunner = new RunningRunner(),
-    imgLoader = new ImageLoader(chrome.extension.getURL('images/loading.svg'),(url,res)=>{
-        chrome.runtime.sendMessage({url},res)
+    imgLoader = new ImageLoader(chrome.extension.getURL('images/loading.svg'), (url, res) => {
+        chrome.runtime.sendMessage({ url }, res)
     })
 //loadingImageURL = chrome.extension.getURL('images/loading.svg')
 

@@ -13,11 +13,11 @@ function updateURL(tabID: number) {
     })
 }
 
-chrome.runtime.onMessage.addListener((message,sender,response)=>{
-        if("url" in message){
-            imgLoader.allowedURL(message.url)
-            response("added")
-        }
+chrome.runtime.onMessage.addListener((message, sender, response) => {
+    if ("url" in message) {
+        imgLoader.allowedURL(message.url)
+        response("added")
+    }
 })
 
 chrome.tabs.onUpdated.addListener((tabID, change, tab) => {
@@ -33,7 +33,7 @@ chrome.tabs.onUpdated.addListener((tabID, change, tab) => {
         chrome.pageAction.hide(tabID)
     }
 })
-chrome.tabs.onRemoved.addListener(tabID=>{
+chrome.tabs.onRemoved.addListener(tabID => {
     imgLoader.unTrackTab(tabID)
 })
 

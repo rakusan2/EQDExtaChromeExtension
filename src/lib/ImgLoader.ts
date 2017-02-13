@@ -26,15 +26,15 @@ export class ImageLoader {
         if (lowPriority) {
             if (this.loadingL < 20) {
                 this.loadingL++
-                this.load({ tag: el, src: el.src },true)
+                this.load({ tag: el, src: el.src }, true)
             } else {
                 el.src = this.loadSrc
                 this.imgL.push(container)
             }
-        }else{
+        } else {
             if (this.loadingH < 20) {
                 this.loadingH++
-                this.load({ tag: el, src: el.src },false)
+                this.load({ tag: el, src: el.src }, false)
             } else {
                 el.src = this.loadSrc
                 this.img.push(container)
@@ -44,20 +44,27 @@ export class ImageLoader {
     private load(el: imgContainer, low: boolean) {
         this.allowLoad(el.src, () => {
             el.tag.src = el.src
-            el.tag.onload = ev => {
+            let image = new Image()
+            image.src = el.src
+            image.onload = ev => {
                 if (low) this.loadingL--
                 else this.loadingH--
                 this.loadNext()
+                console.log({ onload: ev })
             }
-            console.log({ loading: el.src })
+            image.onerror = ev => {
+                console.log({ error: ev })
+                setTimeout(() => { this.load(el, low) }, 5)
+            }
+            console.log({ loading: el.src, done: image.complete })
         })
     }
     private loadNext() {
         if (this.loadingL + (2 * this.loadingH) > 20) return
         if (this.imgL.length > 0) {
-            this.load(this.imgL.shift(),true)
+            this.load(this.imgL.shift(), true)
         } else if (this.img.length > 0) {
-            this.load(this.img.shift(),false)
+            this.load(this.img.shift(), false)
         }
 
     }

@@ -6,11 +6,14 @@ interface blockedTabs {
 let allowedURLs: string[] = [],
     trackedTabIds: blockedTabs = {},
     listening = false,
+    extensionURL = /^chrome-extension/,
     requestBlocker = (details: chrome.webRequest.WebRequestBodyDetails): chrome.webRequest.BlockingResponse => {
+        if (extensionURL.test(details.url)) return
         let id = details.tabId,
             inTrackedIds = id in trackedTabIds
+        if (allowedURLs.indexOf(details.url) >= 0) console.log('in allowed')
         if (inTrackedIds && details.frameId == 0 && allowedURLs.indexOf(details.url) < 0 && trackedTabIds[id].passed > 10) {
-            console.log({ block: details.url, allowed: this.allowedURLs })
+            console.log({ block: details.url, allowed: allowedURLs })
             return { cancel: true }
         } else if (inTrackedIds && details.frameId == 0) trackedTabIds[id].passed++
     }
@@ -28,7 +31,8 @@ export function stop() {
     chrome.webRequest.onBeforeRequest.removeListener(requestBlocker)
 }
 export function allowedURL(url: string) {
-    allowedURLs.push(url)
+    if (allowedURLs.indexOf(url) < 0)
+        allowedURLs.push(url)
 }
 export function trackTab(id: number) {
     if (id in trackedTabIds) return

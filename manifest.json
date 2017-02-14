@@ -43,6 +43,6 @@
         "webRequestBlocking"
     ],
     "web_accessible_resources": [
-        "images/loading.svg"
+        "images/Loading.svg"
     ]
 }

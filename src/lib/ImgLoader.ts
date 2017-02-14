@@ -1,6 +1,7 @@
 interface imgContainer {
     tag: HTMLImageElement
-    src: string
+    src: string,
+    tried:number
 }
 export class ImageLoader {
     private img: imgContainer[]
@@ -19,7 +20,7 @@ export class ImageLoader {
             return
         }
         console.log('Loading Image ' + (lowPriority ? 'low' : 'high'))
-        let container: imgContainer = { tag: el, src: el.src }
+        let container: imgContainer = { tag: el, src: el.src+'?v=eqd',tried:0 }
         el.src = this.loadSrc
         if(this.loadingL + (2 * this.loadingH) < 20){
             if(lowPriority){
@@ -48,8 +49,18 @@ export class ImageLoader {
             console.log({ onload: ev })
         }
         image.onerror = ev => {
-            console.log({ error: ev,mesg:ev.message })
-            setTimeout(() => { this.load(el, low) }, 50)
+            el.tried++
+            if(low){
+                this.loadingL--
+                if(el.tried<3)this.imgL.push(el)
+            }
+            else {
+                this.loadingH--
+                if(el.tried<3)this.img.push(el)
+            }
+            console.log({ error: ev,mesg:ev.message,tried:el.tried })
+            this.loadNext()
+            //setTimeout(() => { this.load(el, low) }, 50)
         }
         console.log({ loading: el.src, Low: this.loadingL, high: this.loadingH })
     }

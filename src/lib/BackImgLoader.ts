@@ -7,12 +7,13 @@ let allowedURLs: string[] = [],
     trackedTabIds: blockedTabs = {},
     listening = false,
     extensionURL = /^chrome-extension/,
+    hasCacheBreaker = /\?v=eqd$/,
     requestBlocker = (details: chrome.webRequest.WebRequestBodyDetails): chrome.webRequest.BlockingResponse => {
         if (extensionURL.test(details.url)) return
         let id = details.tabId,
             inTrackedIds = id in trackedTabIds
         if (allowedURLs.indexOf(details.url) >= 0) console.log('in allowed')
-        if (inTrackedIds && details.frameId == 0 && allowedURLs.indexOf(details.url) < 0 && trackedTabIds[id].passed > 20) {
+        if (inTrackedIds && details.frameId == 0 && !hasCacheBreaker.test(details.url) && allowedURLs.indexOf(details.url) < 0 && trackedTabIds[id].passed > 20) {
             console.log({ block: details.url, allowed: allowedURLs })
             allowedURLs.push(details.url)
             return { cancel: true }

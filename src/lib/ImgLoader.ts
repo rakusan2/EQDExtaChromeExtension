@@ -8,62 +8,58 @@ export class ImageLoader {
     private loadingL: number
     private loadingH: number
     private loadSrc: string
-    private allowLoad: (src: string, done?: () => any) => any
-    constructor(loadSrc: string, allowLoad: (src: string, done?: () => any) => any) {
+    constructor(loadSrc: string) {
         this.img = []
         this.imgL = []
         this.loadingH = this.loadingL = 0
         this.loadSrc = loadSrc
-        this.allowLoad = allowLoad
     }
     addImage(el: HTMLImageElement, lowPriority?: boolean) {
         if (el.complete) {
-            this.allowLoad(el.src)
             return
         }
-        console.log('Loading Image')
+        console.log('Loading Image ' + (lowPriority ? 'low' : 'high'))
         let container: imgContainer = { tag: el, src: el.src }
-        if (lowPriority) {
-            if (this.loadingL < 20) {
+        el.src = this.loadSrc
+        if(this.loadingL + (2 * this.loadingH) < 20){
+            if(lowPriority){
                 this.loadingL++
-                this.load({ tag: el, src: el.src }, true)
-            } else {
-                el.src = this.loadSrc
-                this.imgL.push(container)
-            }
-        } else {
-            if (this.loadingH < 20) {
+                this.load(container, true)
+            }else{
                 this.loadingH++
-                this.load({ tag: el, src: el.src }, false)
-            } else {
-                el.src = this.loadSrc
+                this.load(container, false)
+            }
+        }else{
+            if(lowPriority){
+                this.imgL.push(container)
+            }else{
                 this.img.push(container)
             }
         }
     }
     private load(el: imgContainer, low: boolean) {
-        this.allowLoad(el.src, () => {
+        let image = new Image()
+        image.src = el.src
+        image.onload = ev => {
+            if (low) this.loadingL--
+            else this.loadingH--
             el.tag.src = el.src
-            let image = new Image()
-            image.src = el.src
-            image.onload = ev => {
-                if (low) this.loadingL--
-                else this.loadingH--
-                this.loadNext()
-                console.log({ onload: ev })
-            }
-            image.onerror = ev => {
-                console.log({ error: ev })
-                setTimeout(() => { this.load(el, low) }, 5)
-            }
-            console.log({ loading: el.src, done: image.complete })
-        })
+            this.loadNext()
+            console.log({ onload: ev })
+        }
+        image.onerror = ev => {
+            console.log({ error: ev,mesg:ev.message })
+            setTimeout(() => { this.load(el, low) }, 50)
+        }
+        console.log({ loading: el.src, Low: this.loadingL, high: this.loadingH })
     }
     private loadNext() {
-        if (this.loadingL + (2 * this.loadingH) > 20) return
+        if (this.loadingL + (2 * this.loadingH) >= 20) return
         if (this.imgL.length > 0) {
+            this.loadingL++
             this.load(this.imgL.shift(), true)
         } else if (this.img.length > 0) {
+            this.loadingH++
             this.load(this.img.shift(), false)
         }
 

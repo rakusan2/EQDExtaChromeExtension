@@ -1,7 +1,7 @@
 {
     "name":"EQD Extras Features",
     "author":"Tomas R",
-    "version":"0.4.7",
+    "version":"0.5.0",
     "manifest_version":2,
     "description":"Extra features for the Equestria Daily site",
     "background":{

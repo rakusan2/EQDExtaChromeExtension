@@ -21,10 +21,12 @@ let sorted: Element[],
     images: ImageGroup[] = [],
     popup: Popup,
     earlyRunner = new RunningRunner(),
-    imgLoader = new ImageLoader(chrome.extension.getURL('images/loading.svg'), (url, res) => {
-        chrome.runtime.sendMessage({ url }, res)
-    })
+    imgLoader = new ImageLoader(chrome.extension.getURL('images/loading.svg'))
 //loadingImageURL = chrome.extension.getURL('images/loading.svg')
+chrome.runtime.sendMessage({ settings: true }, mesg => {
+    console.log({ mesg })
+    if ('sLoad' in mesg && !mesg.sLoad) imgLoader.addImage = () => { }
+})
 
 earlyRunner.onElement('HEAD', () => console.log('found head'))
     .onClass<'DIV'>('post-body', (el, tree) => {
@@ -34,15 +36,18 @@ earlyRunner.onElement('HEAD', () => console.log('found head'))
         })
     })
     .secondTree(tree => {
-        tree.onClass<"DIV">('post-body', (el, tree) => {
-            tree.onElement('IMG', el => {
-                imgLoader.addImage(el, false)
+        tree.onElement('HEAD')
+            .onClass<"DIV">('post-body', (el, tree) => {
+                console.log('found post-body in second')
+                tree.onElement('IMG', el => {
+                    console.log('found an image in post-body')
+                    imgLoader.addImage(el, false)
+                })
             })
-        })
-        tree.onElement('IMG', el => {
-            console.log('found an image')
-            imgLoader.addImage(el, true)
-        })
+            .onElement('IMG', el => {
+                console.log('found an image')
+                imgLoader.addImage(el, true)
+            })
     }).run(document.documentElement)
 
 addEventListener('DOMContentLoaded', () => earlyRunner.stop())
@@ -50,10 +55,10 @@ addEventListener('DOMContentLoaded', () => earlyRunner.stop())
 console.log({ document, length: document.all.length })
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    console.log({ message })
     currentLabels = getLabels();
     sendResponse(currentLabels);
     //if (currentLabels.indexOf("Drawfriend") >= 0) prepare("Drawfriend");
-    relocateSettings();
 });
 
 interface mesgPopup {
@@ -271,6 +276,7 @@ const preparations = {
 function prepare(type: "Drawfriend") {
     docBody = <HTMLBodyElement>document.body
 
+    relocateSettings();
     commentSection = <HTMLDivElement>document.getElementsByClassName("post-comments")[0]
     keyfuncs['"'] = goToComment
     keyfuncs["'"] = goToComment

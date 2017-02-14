@@ -56,8 +56,8 @@ export class RunningRunner extends RunningTreeBuilder {
     }
     private runNode(node: Node, tree: RunningTree, tree2: RunningTree) {
         if (avoidNode(node)) return;
-        checkRunTree(node, tree)
-        checkRunTree(node, tree2)
+        tree = checkRunTree(node, tree)
+        tree2 = checkRunTree(node, tree2)
         if (tree === undefined && tree2 === undefined) return;
         if (node.firstChild) {
             for (let i = 0; i < node.childNodes.length; i++) {
@@ -98,17 +98,21 @@ function avoidNode(node: Node) {
 
 function checkRunTree(node: Node, tree: RunningTree) {
     if (tree === undefined) return
-    let test: string, nextTree = new RunningTreeBuilder;
+    let test: string, nextTree = new RunningTreeBuilder();
     if ('id' in node && (<HTMLElement>node).id in tree.ids) {
         if (tree.ids[(<HTMLElement>node).id] !== undefined) tree.ids[(<HTMLElement>node).id](node, nextTree);
-        tree = nextTree.tree
+        console.log({ name: 'id',id:(<HTMLElement>node).id, tree, next: nextTree.tree })
+        return nextTree.tree
     }
     else if ('classList' in node && (test = checkClass((<HTMLElement>node).classList, tree.classes))) {
         if (tree.classes[test] !== undefined) tree.classes[test](node, nextTree)
-        tree = nextTree.tree
+        console.log({ name: 'class',class:test, tree, next: nextTree.tree })
+        return nextTree.tree
     }
     else if (node.nodeName in tree.elements) {
         if (tree.elements[node.nodeName] !== undefined) tree.elements[node.nodeName](node, nextTree);
-        tree = nextTree.tree
+        console.log({ name: 'element',element:node.nodeName, tree, next: nextTree.tree })
+        return nextTree.tree
     }
+    return tree
 }

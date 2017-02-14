@@ -52,14 +52,17 @@ gulp.add('copyFiles', () => {
         .pipe(gulp.dest('build/files'))
 })
 
-gulp.add("default", ['js', 'css'])
+gulp.add("default", ['copyFiles','js', 'css'])
+gulp.add('build',['copyFiles','css'],()=>{
+    combinejs(false,false)
+})
 
 gulp.add("watch", ['copyFiles', 'css'], () => {
     combinejs(true, false);
     gulp.watch('src/*.scss', ['css'])
 })
 
-gulp.add("build", ['copyFiles', 'js', 'css'])
+gulp.add("pack", ['copyFiles', 'js', 'css'])
 
 gulp.add('crx', ['build'], () => {
     gulp.src('build/files')

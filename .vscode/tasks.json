@@ -14,7 +14,7 @@
             "isTestCommand": true
         },
         {
-            "taskName": "build",
+            "taskName": "pack",
             "args": [],
             "isBuildCommand": true,
             "isWatching": false,

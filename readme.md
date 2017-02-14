@@ -7,8 +7,19 @@ This is a chrome extension made to give EQD some extra features like image brows
 * Connects the Settings to the nav-bar
 * Press ' or " to go to or back from comments
 * Press ESC to stop typing comment
+* Customized Image Loading mechanism
 
 Future features can be found on the [**projects page**](https://github.com/rakusan2/EQDExtaChromeExtension/projects/1)
+
+***
+
+### Build Instructions
+1. Install [Node](https://nodejs.org)
+2. Clone the repository
+3. Inside the repository run `npm run build`
+4. Inside Chrome go to Extensions and turn on Developer Mode
+5. Click **Load Unpacked Extension**
+6. Point chrome to **build/files** inside the repository
 
 ***
 

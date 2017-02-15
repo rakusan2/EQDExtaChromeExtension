@@ -7,15 +7,15 @@ let allowedURLs: string[] = [],
     trackedTabIds: blockedTabs = {},
     listening = false,
     extensionURL = /^chrome-extension/,
-    hasCacheBreaker = /\?v=eqd$/,
+    hasCacheBreaker = /\?.*v=1$/,
     requestBlocker = (details: chrome.webRequest.WebRequestBodyDetails): chrome.webRequest.BlockingResponse => {
         if (extensionURL.test(details.url)) return
         let id = details.tabId,
             inTrackedIds = id in trackedTabIds
         if (allowedURLs.indexOf(details.url) >= 0) console.log('in allowed')
-        if (inTrackedIds && details.frameId == 0 && !hasCacheBreaker.test(details.url) && allowedURLs.indexOf(details.url) < 0 && trackedTabIds[id].passed > 20) {
+        if (inTrackedIds && details.frameId == 0 && !hasCacheBreaker.test(details.url) /*&& allowedURLs.indexOf(details.url) < 0 */&& trackedTabIds[id].passed > 20) {
             console.log({ block: details.url, allowed: allowedURLs })
-            allowedURLs.push(details.url)
+            //allowedURLs.push(details.url)
             return { cancel: true }
         } else if (inTrackedIds && details.frameId == 0) trackedTabIds[id].passed++
     }
@@ -41,9 +41,11 @@ export function trackTab(id: number) {
     trackedTabIds[id] = {
         passed: 0
     }
+    console.log({track:id,Tabs:Object.keys(trackedTabIds)})
 }
 export function unTrackTab(id: number) {
     if (id in trackedTabIds) delete trackedTabIds[id]
+    console.log({untrack:id,Tabs:Object.keys(trackedTabIds)})
 }
 export function tabIsTracked(id: number) {
     return id in trackedTabIds

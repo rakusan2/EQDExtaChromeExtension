@@ -16,16 +16,17 @@ function updateURL(tabID: number) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, response) => {
-    if('settings' in message)response({sLoad:useSpecialLoad})
+    console.log({message})
+    if ('settings' in message) response({ sLoad: useSpecialLoad })
 })
 
 chrome.tabs.onUpdated.addListener((tabID, change, tab) => {
     let isEQD = eqdUrl.test(tab.url)
-    console.log({ isEQD, change })
-    if(isEQD && change.status === "complete"){
+    if (isEQD) console.log({ change })
+    if (isEQD && change.status === "complete") {
         updateURL(tabID)
     }
-    
+
     if (isEQD && !imgLoader.tabIsTracked(tabID)) {
         imgLoader.trackTab(tabID)
         if (useSpecialLoad) imgLoader.start()
@@ -38,7 +39,7 @@ chrome.tabs.onRemoved.addListener(tabID => {
     imgLoader.unTrackTab(tabID)
 })
 
-chrome.tabs.query({ url: '*://www.equestriadaily.com/*/**' }, tabs => {
+chrome.tabs.query({ url: '*://www.equestriadaily.com/*' }, tabs => {
     tabs.forEach(tab => {
         updateURL(tab.id)
     })

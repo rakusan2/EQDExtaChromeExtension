@@ -3,6 +3,10 @@ import { ImageGroup } from './lib/toolbox'
 import { Popup } from './lib/popup'
 import { RunningRunner } from './lib/RunningRunner'
 import { ImageLoader } from './lib/ImgLoader'
+chrome.runtime.sendMessage({ settings: true }, mesg => {
+    console.log({ mesg })
+    if ('sLoad' in mesg && !mesg.sLoad) imgLoader.addImage = () => { }
+})
 let sorted: Element[],
     postContent: HTMLCollection,
     commentSection: HTMLDivElement,
@@ -23,16 +27,18 @@ let sorted: Element[],
     earlyRunner = new RunningRunner(),
     imgLoader = new ImageLoader(chrome.extension.getURL('images/Loading.svg'))
 //loadingImageURL = chrome.extension.getURL('images/loading.svg')
-chrome.runtime.sendMessage({ settings: true }, mesg => {
-    console.log({ mesg })
-    if ('sLoad' in mesg && !mesg.sLoad) imgLoader.addImage = () => { }
-})
 
 earlyRunner.onElement('HEAD', () => console.log('found head'))
-    .onClass<'DIV'>('post-body', (el, tree) => {
-        console.log('found post-body')
-        tree.onElement('HR', () => {
-            console.log('found HR in post-body')
+    .onElement('BODY', (el, tree) => {
+        let script = document.createElement('script')
+        script.dataset['from']=chrome.runtime.id
+        script.src = chrome.extension.getURL('src/eqd-script-inject.js')
+        el.appendChild(script)
+        tree.onClass<'DIV'>('post-body', (el, tree) => {
+            console.log('found post-body')
+            tree.onElement('HR', () => {
+                console.log('found HR in post-body')
+            })
         })
     })
     .secondTree(tree => {
@@ -124,9 +130,10 @@ interface dsqHomePreload extends dsqMesg {
 }
 
 type dsq = dsqReady | dsqResize | dsqPostCount | dsqRendered | dsqSessionIdentity | dsqFakeScroll | dsqHomePreload;
+
 console.log('Adding Messaging')
 window.onmessage = (m: mesgEvent) => {
-    //console.log({m,dataType:typeof m.data})
+    console.log({m,dataType:typeof m.data})
     if (m.origin === "https://disqus.com") {
         let dsqData: dsq;
         if (typeof m.data === "string") dsqData = JSON.parse(m.data) as dsq

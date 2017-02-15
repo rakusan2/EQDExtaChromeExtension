@@ -14,7 +14,8 @@ export interface ElementMap {
     'HR': HTMLHRElement,
     'P': HTMLParagraphElement,
     'B': Element,
-    'HEAD':HTMLHeadElement
+    'HEAD':HTMLHeadElement,
+    'BODY':HTMLBodyElement
 }
 export class ElementTreeBuilder {
     taskTree: ElementTask

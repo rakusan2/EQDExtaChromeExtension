@@ -20,7 +20,8 @@ export class ImageLoader {
             return
         }
         console.log('Loading Image ' + (lowPriority ? 'low' : 'high'))
-        let container: imgContainer = { tag: el, src: el.src+'?v=eqd',tried:0 }
+        
+        let container: imgContainer = { tag: el, src: el.src+(/\?/.test(el.src)?'&':'?')+"v=1",tried:0 }
         el.src = this.loadSrc
         if(this.loadingL + (2 * this.loadingH) < 20){
             if(lowPriority){
@@ -58,7 +59,7 @@ export class ImageLoader {
                 this.loadingH--
                 if(el.tried<3)this.img.push(el)
             }
-            console.log({ error: ev,mesg:ev.message,tried:el.tried })
+            console.log({ error: ev,mesg:ev.message,tried:el.tried,url : el.src })
             this.loadNext()
             //setTimeout(() => { this.load(el, low) }, 50)
         }

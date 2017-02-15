@@ -9,7 +9,7 @@
     },
     "content_scripts":[
         {
-            "matches":["*://www.equestriadaily.com/*/**"],
+            "matches":["*://www.equestriadaily.com/*"],
             "js":["src/eqd-inject.js"],
             "css":["src/eqd.css"],
             "run_at": "document_start"
@@ -43,6 +43,7 @@
         "webRequestBlocking"
     ],
     "web_accessible_resources": [
-        "images/Loading.svg"
+        "images/Loading.svg",
+        "src/eqd-script-inject.js"
     ]
 }

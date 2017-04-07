@@ -1,7 +1,7 @@
 interface imgContainer {
     tag: HTMLImageElement
     src: string,
-    tried:number
+    tried: number
 }
 export class ImageLoader {
     private img: imgContainer[]
@@ -20,27 +20,41 @@ export class ImageLoader {
             return
         }
         console.log('Loading Image ' + (lowPriority ? 'low' : 'high'))
-        
-        let container: imgContainer = { tag: el, src: el.src+(/\?/.test(el.src)?'&':'?')+"v=1",tried:0 }
+
+        let container: imgContainer = { tag: el, src: el.src + (/\?/.test(el.src) ? '&' : '?') + "eqd=eqd", tried: 0 }
         el.src = this.loadSrc
-        if(this.loadingL + (2 * this.loadingH) < 20){
-            if(lowPriority){
+        if (this.loadingL + (2 * this.loadingH) < 20) {
+            if (lowPriority) {
                 this.loadingL++
                 this.load(container, true)
-            }else{
+            } else {
                 this.loadingH++
                 this.load(container, false)
             }
-        }else{
-            if(lowPriority){
+        } else {
+            if (lowPriority) {
                 this.imgL.push(container)
-            }else{
+            } else {
                 this.img.push(container)
             }
         }
     }
     private load(el: imgContainer, low: boolean) {
         let image = new Image()
+        image.onerror = ev => {
+            el.tried++
+            if (low) {
+                this.loadingL--
+                if (el.tried < 3) this.imgL.push(el)
+            }
+            else {
+                this.loadingH--
+                if (el.tried < 3) this.img.push(el)
+            }
+            console.log({ error: ev, mesg: ev.message, tried: el.tried, url: el.src })
+            this.loadNext()
+            //setTimeout(() => { this.load(el, low) }, 50)
+        }
         image.src = el.src
         image.onload = ev => {
             if (low) this.loadingL--
@@ -48,20 +62,6 @@ export class ImageLoader {
             el.tag.src = el.src
             this.loadNext()
             console.log({ onload: ev })
-        }
-        image.onerror = ev => {
-            el.tried++
-            if(low){
-                this.loadingL--
-                if(el.tried<3)this.imgL.push(el)
-            }
-            else {
-                this.loadingH--
-                if(el.tried<3)this.img.push(el)
-            }
-            console.log({ error: ev,mesg:ev.message,tried:el.tried,url : el.src })
-            this.loadNext()
-            //setTimeout(() => { this.load(el, low) }, 50)
         }
         console.log({ loading: el.src, Low: this.loadingL, high: this.loadingH })
     }

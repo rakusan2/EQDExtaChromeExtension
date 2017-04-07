@@ -1,74 +1,114 @@
 import { ElementMap } from './ElementRunner'
 let avoidCache = /^sizcache/;
 const ObserverOptions: MutationObserverInit = { childList: true };
-type elementTask = { [id: string]: (el: Node, tree: RunningTreeBuilder) => any }
+type elementTask = { [id: string]: (el: Node, tree: RunningTreeBuilder) => options | void }
 interface RunningTree {
     classes: elementTask,
     ids: elementTask,
     elements: elementTask
-
+}
+export interface options {
+    removeNode?: boolean,
+    removeTask?: boolean
 }
 export class RunningTreeBuilder {
     tree: RunningTree
-    tree2: RunningTree
-    private initTree() {
+    private getTree() {
         if (this.tree === undefined) this.tree = { classes: {}, ids: {}, elements: {} }
+        return this.tree
     }
-    onId<K extends keyof ElementMap>(id: string, callback?: (element: ElementMap[K], tree: RunningTreeBuilder) => any): this
-    onId(id: string, callback?: (element: Node, tree: RunningTreeBuilder) => any): this {
-        this.initTree();
-        this.tree.ids[id] = callback;
-        console.log('adding ' + id)
+    onId<K extends keyof ElementMap>(ids: string | string[], callback?: (element: ElementMap[K], tree: BuilderOfTrees) => options | void): this
+    onId(ids: string | string[], callback?: (element: Node, tree: BuilderOfTrees) => options | void): this {
+        let tree = this.getTree();
+        if (Array.isArray(ids)) {
+            for (let i = 0; i < ids.length; i++) {
+                tree.ids[ids[i]] = callback
+            }
+        } else tree.ids[ids] = callback;
+        console.log('adding ' + ids)
         return this;
     }
 
-    onClass<K extends keyof ElementMap>(name: string, callback?: (element: ElementMap[K], tree: RunningTreeBuilder) => any): this
-    onClass(name: string, callback?: (element: Node, tree: RunningTreeBuilder) => any): this {
-        this.initTree();
-        this.tree.classes[name] = callback;
-        console.log('adding ' + name)
+    onClass<K extends keyof ElementMap>(names: string | string[], callback?: (element: ElementMap[K], tree: BuilderOfTrees) => options | void): this
+    onClass(names: string | string[], callback?: (element: Node, tree: BuilderOfTrees) => options | void): this {
+        let tree = this.getTree();
+        if (Array.isArray(names)) {
+            for (let i = 0; i < names.length; i++) {
+                tree.classes[names[i]] = callback
+            }
+        } else tree.classes[names] = callback;
+        console.log('adding ' + names)
         return this;
     }
-    onElement<K extends keyof ElementMap>(name: K, callback?: (element: ElementMap[K], tree: RunningTreeBuilder) => any): this
-    onElement(name: string, callback?: (element: Node, tree: RunningTreeBuilder) => any): this {
-        this.initTree();
-        this.tree.elements[name] = callback;
-        console.log('adding ' + name)
+    onElement<K extends keyof ElementMap>(names: K[], callback?: (element: ElementMap[K], tree: BuilderOfTrees) => options | void): this
+    onElement<K extends keyof ElementMap>(names: K, callback?: (element: ElementMap[K], tree: BuilderOfTrees) => options | void): this
+    onElement(names: string | string[], callback?: (element: Node, tree: BuilderOfTrees) => options | void): this {
+        let tree = this.getTree();
+        if (Array.isArray(names)) {
+            for (let i = 0; i < names.length; i++) {
+                tree.elements[names[i]] = callback
+            }
+        } else tree.elements[names] = callback;
+        console.log('adding ' + names)
         return this
     }
-    secondTree(callback: (tree: RunningTreeBuilder) => any): this {
-        let build = new RunningTreeBuilder()
-        callback(build)
-        this.tree2 = build.tree
-        return this
+    build() {
+        return this.tree
     }
 }
 
-export class RunningRunner extends RunningTreeBuilder {
+export class BuilderOfTrees extends RunningTreeBuilder {
+    private trees: RunningTree[]
+    addTree(callback: (builder: RunningTreeBuilder) => any) {
+        let tree = new RunningTreeBuilder()
+        callback(tree)
+        this.trees.push(tree.build())
+    }
+    buildAll() {
+        return [this.tree, ...this.trees]
+    }
+}
+
+export class RunningRunner {
     private observers: MutationObserver[]
-    constructor() {
-        super()
+    private trees: RunningTree[]
+    constructor(trees: RunningTree | RunningTree[]) {
+        if (Array.isArray(trees)) {
+            this.trees = trees
+        } else {
+            this.trees = [trees]
+        }
         this.observers = []
         console.log('creating runRunner')
     }
     run(node: Node) {
-        this.runNode(node, this.tree, this.tree2)
+        this.runNode(node, this.trees)
     }
-    private runNode(node: Node, tree: RunningTree, tree2: RunningTree) {
+    private runNode(node: Node, trees: RunningTree[]) {
         if (avoidNode(node)) return;
-        tree = checkRunTree(node, tree)
-        tree2 = checkRunTree(node, tree2)
-        if (tree === undefined && tree2 === undefined) return;
+        let newTrees: RunningTree[] = [],
+            onOptions = (opt: options) => {
+                if (!exit && (exit = opt.removeNode)) {  //It is meant to set remove
+                    node.parentNode.removeChild(node)
+                }
+            },
+            exit = false
+        for (let i = 0; i < trees.length; i++) {
+            let treeResult = runTree(node, trees[i], onOptions)
+            if (Array.isArray(treeResult)) newTrees.push(...treeResult)
+            else newTrees.push(treeResult)
+        }
+        if (newTrees.length === 0 || exit) return;
         if (node.firstChild) {
             for (let i = 0; i < node.childNodes.length; i++) {
-                this.runNode(node.childNodes[i], tree, tree2);
+                this.runNode(node.childNodes[i], newTrees);
             }
         }
         //console.log({name:node.nodeName,node})
         let ob = new MutationObserver((records, obs) => {
             for (let i = 0; i < records.length; i++) {
                 for (let ii = 0; ii < records[i].addedNodes.length; ii++) {
-                    this.runNode(records[i].addedNodes[ii], tree, tree2)
+                    this.runNode(records[i].addedNodes[ii], newTrees)
                 }
             }
         })
@@ -96,23 +136,25 @@ function avoidNode(node: Node) {
     return false
 }
 
-function checkRunTree(node: Node, tree: RunningTree) {
+function runTree(node: Node, tree: RunningTree, onOptions?: (opt: options) => any) {
     if (tree === undefined) return
-    let test: string, nextTree = new RunningTreeBuilder();
-    if ('id' in node && (<HTMLElement>node).id in tree.ids) {
-        if (tree.ids[(<HTMLElement>node).id] !== undefined) tree.ids[(<HTMLElement>node).id](node, nextTree);
+    let test: string, nextTree = new BuilderOfTrees(), options: options;
+    if ('id' in node && (<HTMLElement>node).id in tree.ids && ((<HTMLElement>node).id in tree.ids)) {
+        options = tree.ids[(<HTMLElement>node).id](node, nextTree) as options
+        if (options !== undefined && options.removeTask) delete tree.ids[(<HTMLElement>node).id]
         //console.log({ name: 'id',id:(<HTMLElement>node).id, tree, next: nextTree.tree })
-        return nextTree.tree
     }
-    else if ('classList' in node && (test = checkClass((<HTMLElement>node).classList, tree.classes))) {
-        if (tree.classes[test] !== undefined) tree.classes[test](node, nextTree)
+    else if (('classList' in node) && (test = checkClass((<HTMLElement>node).classList, tree.classes)) && test in tree.classes) {
+        options = tree.classes[test](node, nextTree) as options
+        if (options !== undefined && options.removeTask) delete tree.classes[test]
         //console.log({ name: 'class',class:test, tree, next: nextTree.tree })
-        return nextTree.tree
     }
     else if (node.nodeName in tree.elements) {
-        if (tree.elements[node.nodeName] !== undefined) tree.elements[node.nodeName](node, nextTree);
+        options = tree.elements[node.nodeName](node, nextTree) as options
+        if (options !== undefined && options.removeTask) delete tree.elements[node.nodeName]
         //console.log({ name: 'element',element:node.nodeName, tree, next: nextTree.tree })
-        return nextTree.tree
     }
-    return tree
+    else return tree
+    if (options !== undefined && onOptions !== undefined) onOptions(options)
+    return nextTree.buildAll()
 }

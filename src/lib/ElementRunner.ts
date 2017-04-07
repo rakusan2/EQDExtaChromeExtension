@@ -7,15 +7,23 @@ interface ElementTask {
     stop: boolean
 }
 export interface ElementMap {
-    "A": HTMLAnchorElement,
-    "DIV": HTMLDivElement,
     "#text": Text,
-    "IMG": HTMLImageElement,
-    'HR': HTMLHRElement,
-    'P': HTMLParagraphElement,
+    "A": HTMLAnchorElement,
     'B': Element,
-    'HEAD':HTMLHeadElement,
-    'BODY':HTMLBodyElement
+    'P': HTMLParagraphElement,
+    'BR': HTMLBRElement,
+    'HR': HTMLHRElement,
+    'LI': HTMLLIElement,
+    'OL': HTMLOListElement,
+    'UL': HTMLUListElement,
+    "DIV": HTMLDivElement,
+    "IMG": HTMLImageElement,
+    'BODY': HTMLBodyElement,
+    'HEAD': HTMLHeadElement,
+    'META': HTMLMetaElement,
+    'SPAN': HTMLSpanElement,
+    'STYLE': HTMLStyleElement,
+    'IFRAME': HTMLIFrameElement
 }
 export class ElementTreeBuilder {
     taskTree: ElementTask
@@ -47,11 +55,11 @@ export class ElementTreeBuilder {
 }
 
 export class ElementRunner extends ElementTreeBuilder {
-    private toRun:(()=>any)[]=[]
+    private toRun: (() => any)[] = []
     runCollection(elements: HTMLCollection) {
         console.log({ tree: this.taskTree, elements })
         this.runTaskCollection(elements, this.taskTree)
-        while(this.toRun.length>0){
+        while (this.toRun.length > 0) {
             this.toRun.pop()()
         }
     }
@@ -63,7 +71,7 @@ export class ElementRunner extends ElementTreeBuilder {
             let nextBranch = tree.nextElements[element.nodeName], test = false
             this.runTaskCollection(element.childNodes, tree.stop ? tree : nextBranch, element)
             if ("task" in nextBranch) {
-                this.toRun.push(()=>nextBranch.task(element));
+                this.toRun.push(() => nextBranch.task(element));
                 test = true
             }
             return test
@@ -77,7 +85,7 @@ export class ElementRunner extends ElementTreeBuilder {
             run = this.runTask(elements[i], tree) || run
         }
         if (!run && !tree.final && tree.onFail !== undefined) {
-            this.toRun.push(()=>tree.onFail(el))
+            this.toRun.push(() => tree.onFail(el))
         }
     }
 }

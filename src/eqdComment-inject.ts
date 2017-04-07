@@ -1,4 +1,4 @@
-import {ElementRunner} from './lib/ElementRunner';
+import { ElementRunner } from './lib/ElementRunner';
 const keys = /^(ArrowDown|ArrowUp|'|"|g)$/,
     commentNumbers = /(fi(?:m|endship)\s?)?(?::|#|are|(?:\b|\D)(?:(?:1?\d{1,2})\b(?:\s?-\s?(?:1?\d{1,2})(?=\D))?)?\s?(?:and|&)|(?:\b|\D)(?:1?\d{1,2})\b(?:\s?-\s?(?:1?\d{1,2})(?=\D))?\s?,)\s?(?:1?\d{1,2})(?:\b|\D)(?:\s?-\s?(?:1?\d{1,2})(?=\D))?(?:\s?,\s?(?:1?\d{1,2})(?:(?=\D)|$)(?:\s?-\s?(?:1?\d{1,2})(?:(?=\D)|$))?)*|^\s?(?:1?\d{1,2})\b(?:\s?-\s?(?:1?\d{1,2}))?\s?(?:\.(?=\D)|$|:)/gi,
     extractNumber = /(\d+)(?:\s?-\s?(\d+))?/g
@@ -20,14 +20,14 @@ function comment() {
     disSendKey = true;
     console.log("commenting");
     let textareaGroup = document.getElementsByClassName("textarea");
-    if (textareaGroup.length == 0) return;
+    if (textareaGroup.length === 0) return;
     let textarea = <HTMLDivElement>textareaGroup[0];
     textarea.focus()
     console.log(textarea)
     document.body.onkeydown = function (this, ev: KeyboardEvent) {
         if (disSendKey) return
         messageMain({ key: ev.key })
-        if (ev.key == "g") getNumbers()
+        //if (ev.key === "g") getNumbers()
         if (keys.test(ev.key)) {
             ev.preventDefault();
             ev.stopPropagation();

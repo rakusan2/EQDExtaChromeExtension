@@ -1,11 +1,16 @@
 import { ElementRunner } from './lib/ElementRunner'
 import { ImageGroup } from './lib/toolbox'
 import { Popup } from './lib/popup'
-import { RunningRunner } from './lib/RunningRunner'
+import { RunningRunner, RunningTreeBuilder, options as treeOpt } from './lib/RunningRunner'
 import { ImageLoader } from './lib/ImgLoader'
+import { dsq } from './lib/disqusInterface'
+let specialImgLoader = true
 chrome.runtime.sendMessage({ settings: true }, mesg => {
     console.log({ mesg })
-    if ('sLoad' in mesg && !mesg.sLoad) imgLoader.addImage = () => { }
+    if ('sLoad' in mesg && !mesg.sLoad) {
+        imgLoader.addImage = () => { }
+        specialImgLoader = false
+    }
 })
 let sorted: Element[],
     postContent: HTMLCollection,
@@ -22,43 +27,142 @@ let sorted: Element[],
     imgEndings = /\.(png|jpe?g|gif)$/,
     titleExtract = /(?:(.+)\s)?(?:by\s(.+))|(.+)/i,
     visibleCharacter = /[\w!"#$%&'()*+,.\/:;<=>?@\[\]^_`{|}~-]/g,
+    cssImageExtract = /url\("(.+)"\)/,
     images: ImageGroup[] = [],
     popup: Popup,
-    earlyRunner = new RunningRunner(),
+    earlyRunner: RunningRunner,
     imgLoader = new ImageLoader(chrome.extension.getURL('images/Loading.svg'))
-//loadingImageURL = chrome.extension.getURL('images/loading.svg')
 
-earlyRunner.onElement('HEAD', () => console.log('found head'))
-    .onElement('BODY', (el, tree) => {
+let mainTree = new RunningTreeBuilder()
+    .onElement('HEAD', () => { console.log('found head') })
+    .onElement('BODY', (bodyEl, tree) => {
         let script = document.createElement('script')
-        script.dataset['from']=chrome.runtime.id
+        script.dataset['from'] = chrome.runtime.id
         script.src = chrome.extension.getURL('src/eqd-script-inject.js')
-        el.appendChild(script)
-        tree.onClass<'DIV'>('post-body', (el, tree) => {
+        bodyEl.appendChild(script)
+        let navbar: HTMLDivElement
+        tree.onId<'DIV'>('nav-bar', navBarEl => {
+            navbar = navBarEl
+        }).onId<'DIV'>('settings', settingsEl => {
+            if (navbar) {
+                settingsEl.classList.add("nav-bar-inner")
+                settingsEl.style.fontWeight = "normal"
+                settingsEl.style.fontSize = "14px"
+                settingsEl.style.marginBottom = "1px"
+                settingsEl.style.top = "2px"
+                navbar.appendChild(settingsEl)
+                navbar.replaceChild
+            }
+        })
+        tree.onClass<'DIV'>('post-body', (postBodyEl, tree) => {
+            let imgNumber = 0
             console.log('found post-body')
+            function addImage(el: HTMLImageElement) {
+
+            }
             tree.onElement('HR', () => {
                 console.log('found HR in post-body')
             })
+                .onElement('DIV', (divEl, tree): treeOpt => {
+                    if (divEl.firstChild === undefined) {
+                        return { removeNode: true }
+                    }
+                    tree.onElement('A', (anchorEl, tree) => {
+                        tree.onElement('IMG', el => {
+                            addImage(el)
+                        })
+                            .onElement('#text', textEl => {
+                                if (visibleCharacter.test(textEl.data)) {
+                                    addSaucy(anchorEl, imgNumber)
+                                }
+                            })
+                    })
+                })
+                .onElement('A', (anchorEl, tree) => {
+                    if (imgEndings.test(anchorEl.href)) {
+                        tree.onElement('IMG', el => {
+                            addImage(el)
+                        })
+                            .onElement('#text', textEl => {
+                                if (visibleCharacter.test(textEl.data)) {
+                                    addSaucy(anchorEl, imgNumber)
+                                }
+                            })
+                    }
+                })
+                .onElement('B', (bEl, tree) => {
+                    tree.onElement('A', anchorEl => {
+                        //Source
+                    })
+                        .onElement('#text', textEl => {
+                            //Title
+                        })
+                })
+                .onElement('#text', textEl => {
+                    //Possible music genre
+                })
         })
-    })
-    .secondTree(tree => {
-        tree.onElement('HEAD')
-            .onClass<"DIV">('post-body', (el, tree) => {
-                console.log('found post-body in second')
-                tree.onElement('IMG', el => {
-                    console.log('found an image in post-body')
-                    imgLoader.addImage(el, false)
+            .onClass<'SPAN'>('post-labels', (postLabelsEl, tree) => {
+                tree.onElement('A', anchorEl => {
+                    //Labels
                 })
             })
-            .onElement('IMG', el => {
-                console.log('found an image')
-                imgLoader.addImage(el, true)
+    }).build(),
+    styleObservers: MutationObserver[] = [],
+    imageTree = new RunningTreeBuilder()
+        .onElement('HEAD', (headEl, tree) => {
+            let changeImgUrl = (styleEl: HTMLStyleElement) => {
+                if (!('rules' in styleEl.sheet)) return
+                let cssRules = (<CSSStyleSheet>styleEl.sheet).rules, m: RegExpExecArray
+                for (let i = 0; i < cssRules.length; i++) {
+                    if ('style' in cssRules[i] && (m = cssImageExtract.exec((<CSSStyleRule>cssRules[i]).style.backgroundImage)) !== null) {
+                        if (m[1] !== undefined) {
+                            let image = new Image(),
+                                changed = m[1] + (/\?/.test(m[1]) ? '&' : '?') + "eqd=eqd";
+                            (<CSSStyleRule>cssRules[i]).style.backgroundImage = `url("${changed}")`
+                            image.src = changed
+                            image.onload = () => {
+                                console.log({ loaded: changed })
+                            }
+                            image.onerror = ev => {
+                                console.log({ onError: ev, src: changed })
+                            }
+                            console.log({ updated: m[1] })
+                        }
+                    }
+                }
+            }
+            tree.onElement('STYLE', styleEl => {
+                if (!specialImgLoader || !('sheet' in styleEl)) {
+                    let styleOb = new MutationObserver(() => {
+                        if ('sheet' in styleEl) changeImgUrl(styleEl)
+                    })
+                    styleOb.observe(styleEl, { attributes: true, attributeFilter: ['sheet'] })
+                    styleObservers.push(styleOb)
+                    return
+                }
+                changeImgUrl(styleEl)
             })
-    }).run(document.documentElement)
+        })
+        .onClass<"DIV">('post-body', (postBodyEl, tree) => {
+            tree.onElement('IMG', el => {
+                console.log('found an image in post-body')
+                imgLoader.addImage(el, false)
+            })
+        })
+        .onElement('IMG', imgEl => {
+            console.log('found an image')
+            imgLoader.addImage(imgEl, true)
+        }).build()
+earlyRunner = new RunningRunner([mainTree, imageTree])
+earlyRunner.run(document.documentElement)
 
-addEventListener('DOMContentLoaded', () => earlyRunner.stop())
-
-console.log({ document, length: document.all.length })
+addEventListener('DOMContentLoaded', () => {
+    earlyRunner.stop()
+    while (styleObservers.length > 0) {
+        styleObservers.pop().disconnect()
+    }
+})
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log({ message })
@@ -66,6 +170,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse(currentLabels);
     //if (currentLabels.indexOf("Drawfriend") >= 0) prepare("Drawfriend");
 });
+
 
 interface mesgPopup {
     popup: {
@@ -92,48 +197,10 @@ interface mesgEvent extends MessageEvent {
         m: mesgPopup | mesgHidePopup | mesgKeys | mesgClick
     } | string
 }
-interface dsqMesg {
-    scope: "host",
-    sender: string
-}
-interface dsqReady extends dsqMesg {
-    data: any[],
-    name: "ready"
-}
-interface dsqResize extends dsqMesg {
-    data: {
-        height: number
-    }
-    name: "resize"
-}
-interface dsqPostCount extends dsqMesg {
-    data: number,
-    name: "posts.count"
-}
-interface dsqRendered extends dsqMesg {
-    data: {
-        height: number
-    }
-    name: "rendered"
-}
-interface dsqSessionIdentity extends dsqMesg {
-    data: any[] | string,
-    name: "session.identity"
-}
-interface dsqFakeScroll extends dsqMesg {
-    data: any[],
-    name: "fakeScroll"
-}
-interface dsqHomePreload extends dsqMesg {
-    data: {},
-    name: "home.preload"
-}
-
-type dsq = dsqReady | dsqResize | dsqPostCount | dsqRendered | dsqSessionIdentity | dsqFakeScroll | dsqHomePreload;
 
 console.log('Adding Messaging')
 window.onmessage = (m: mesgEvent) => {
-    console.log({m,dataType:typeof m.data})
+    console.log({ m, dataType: typeof m.data, data: m.data })
     if (m.origin === "https://disqus.com") {
         let dsqData: dsq;
         if (typeof m.data === "string") dsqData = JSON.parse(m.data) as dsq
@@ -233,9 +300,9 @@ function keyHandler(key: string): boolean {
 function keyScroll(dir: Direction) {
     if (updateDistOnNextMove) updateDist()
     let difDist = distances[current] - docBody.scrollTop
-    if (dir == Direction.up && difDist >= -90) {
+    if (dir === Direction.up && difDist >= -90) {
         current = Math.max(0, current - 1)
-    } else if (dir == Direction.down && difDist <= 90) {
+    } else if (dir === Direction.down && difDist <= 90) {
         current = Math.min(sorted.length - 1, current + 1)
     }
     docBody.scrollTop = distances[current]
